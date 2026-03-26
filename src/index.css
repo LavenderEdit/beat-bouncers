@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  /* Aquí se extendera a futuro si se necesita */
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #050510;
+  color: white;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
