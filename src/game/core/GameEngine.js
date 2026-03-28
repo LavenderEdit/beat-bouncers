@@ -6,11 +6,12 @@ import { Platform } from '../entities/Platform';
 import { Item } from '../entities/Item';
 
 export class GameEngine {
-    constructor(canvas, onStateUpdate, onGameOver) {
+    constructor(canvas, onStateUpdate, onGameOver, settings) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.onStateUpdate = onStateUpdate;
         this.onGameOver = onGameOver;
+        this.settings = settings;
 
         this.input = new InputManager();
         this.audioEngine = new AudioEngine();
@@ -52,13 +53,13 @@ export class GameEngine {
     }
 
     async initAudio(sourceType, isP2Bot, file = null) {
-        this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD' }, false, this);
-        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' }, isP2Bot, this);
+        this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD' }, false, this, this.settings.lives);
+        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' }, isP2Bot, this, this.settings.lives);
         this.platforms = Array.from({ length: NUM_PLATFORMS }, (_, i) => new Platform(i, this.canvas.width, this.canvas.height));
         this.items = [];
         this.particles = [];
 
-        await this.audioEngine.init(sourceType, file, () => {
+        await this.audioEngine.init(sourceType, file, this.settings.volume, () => {
             if (!this.isGameOver) this.checkGameEnd(true);
         });
 
@@ -107,16 +108,15 @@ export class GameEngine {
     checkGameEnd(songEnded = false) {
         if (this.isGameOver) return;
         this.isGameOver = true;
-
         this.audioEngine.cleanup();
 
-        let result = { text: '', color: '' };
+        let result = { type: '', color: '' };
         if (songEnded || (this.player1.lives <= 0 && this.player2.lives <= 0)) {
-            result = { text: "¡EMPATE! LA MÚSICA TERMINÓ", color: "text-white" };
+            result = { type: 'tie', color: "text-white" };
         } else if (this.player1.lives <= 0) {
-            result = { text: this.player2.isBot ? "¡LA CPU GANA!" : "¡JUGADOR 2 GANA!", color: "text-cyan-400" };
+            result = { type: this.player2.isBot ? 'cpu' : 'p2', color: "text-cyan-400" };
         } else if (this.player2.lives <= 0) {
-            result = { text: "¡JUGADOR 1 GANA!", color: "text-pink-400" };
+            result = { type: 'p1', color: "text-pink-400" };
         }
 
         this.input.stop();
@@ -127,7 +127,14 @@ export class GameEngine {
         if (this.isGameOver) return;
         this.animationId = requestAnimationFrame(this.loop);
 
-        this.ctx.fillStyle = this.isErraticMode ? 'rgba(20, 0, 10, 0.4)' : 'rgba(5, 5, 16, 0.3)';
+        if (this.settings.theme === 'matrix') {
+            this.ctx.fillStyle = this.isErraticMode ? 'rgba(0, 30, 0, 0.4)' : 'rgba(0, 8, 0, 0.3)';
+        } else if (this.settings.theme === 'blood') {
+            this.ctx.fillStyle = this.isErraticMode ? 'rgba(40, 0, 0, 0.5)' : 'rgba(15, 0, 0, 0.3)';
+        } else {
+            this.ctx.fillStyle = this.isErraticMode ? 'rgba(20, 0, 10, 0.4)' : 'rgba(5, 5, 16, 0.3)';
+        }
+
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         const { dataArray, globalIntensity, isMicMode } = this.audioEngine.getFrequencyData();
