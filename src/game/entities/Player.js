@@ -2,7 +2,7 @@ import { GRAVITY, TERMINAL_VELOCITY } from '../../config/constants';
 import { Particle } from './Particle';
 
 export class Player {
-    constructor(id, color, startX, controls, isBot, engine) {
+    constructor(id, color, startX, controls, isBot, engine, maxLives) {
         this.id = id;
         this.engine = engine;
         this.width = 35;
@@ -20,7 +20,8 @@ export class Player {
         this.isGrounded = false;
         this.jumps = 2;
 
-        this.lives = 3;
+        this.maxLives = maxLives;
+        this.lives = maxLives;
         this.percentage = 0;
         this.invulnerable = 0;
         this.respawning = false;
@@ -132,6 +133,8 @@ export class Player {
     }
 
     spawnParticles(amount = 10, colorStr = this.color, isExplosion = false) {
+        if (!this.engine.settings.particles) return;
+
         for (let i = 0; i < amount; i++) {
             this.engine.particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, colorStr, isExplosion));
         }

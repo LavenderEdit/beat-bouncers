@@ -24,7 +24,7 @@ export class Item {
     }
     collect(p) {
         this.active = false;
-        if (p.lives < 3) p.lives++;
+        if (p.lives < p.maxLives) p.lives++;
         p.percentage = 0;
         p.spawnParticles(30, '#00ff00', true);
     }
