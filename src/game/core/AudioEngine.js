@@ -3,15 +3,19 @@ export class AudioEngine {
         this.audioCtx = null;
         this.analyser = null;
         this.source = null;
+        this.gainNode = null;
         this.dataArray = null;
         this.isMicMode = false;
     }
 
-    async init(sourceType, file, onSongEnded) {
+    async init(sourceType, file, volume = 0.5, onSongEnded) {
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         this.analyser = this.audioCtx.createAnalyser();
         this.analyser.fftSize = 512;
         this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+        this.gainNode = this.audioCtx.createGain();
+        this.gainNode.gain.value = volume;
 
         if (sourceType === 'file' && file) {
             this.isMicMode = false;
@@ -19,8 +23,11 @@ export class AudioEngine {
             const audioBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
             this.source = this.audioCtx.createBufferSource();
             this.source.buffer = audioBuffer;
+
             this.source.connect(this.analyser);
-            this.analyser.connect(this.audioCtx.destination);
+            this.analyser.connect(this.gainNode);
+            this.gainNode.connect(this.audioCtx.destination);
+
             this.source.start(0);
             this.source.onended = onSongEnded;
         } else if (sourceType === 'mic') {
