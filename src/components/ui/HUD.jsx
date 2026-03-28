@@ -1,7 +1,9 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
+import { translations } from '../../utils/i18n';
 
-export default function HUD({ gameState, isP2Bot }) {
+export default function HUD({ gameState, isP2Bot, language }) {
+    const t = translations[language];
     const renderLives = (lives) => Array(Math.max(0, lives)).fill(0).map((_, i) => <Heart key={i} size={24} fill="currentColor" />);
     const getDamageColor = (percent) => percent > 100 ? 'text-red-500' : (percent > 50 ? 'text-orange-400' : 'text-white');
 
@@ -15,9 +17,9 @@ export default function HUD({ gameState, isP2Bot }) {
 
             <div className="text-center bg-black/60 backdrop-blur-sm px-8 py-3 rounded-2xl border border-white/10 shadow-lg">
                 <p className={`text-red-500 font-black text-xl mb-1 transition-opacity duration-300 ${gameState.erratic ? 'opacity-100 animate-pulse' : 'opacity-0'}`}>
-                    ¡TERRENO ERRÁTICO!
+                    {t.erratic}
                 </p>
-                <p className="text-gray-400 text-xs tracking-[0.2em] uppercase font-bold">Tiempo</p>
+                <p className="text-gray-400 text-xs tracking-[0.2em] uppercase font-bold">{t.time}</p>
                 <p className="text-4xl font-black text-white font-mono">{gameState.time}s</p>
             </div>
 
