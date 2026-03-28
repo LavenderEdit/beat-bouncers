@@ -17,8 +17,9 @@ export class GameEngine {
         this.audioEngine = new AudioEngine();
 
         this.isGameOver = false;
+        this.isMatchActive = false;
         this.animationId = null;
-        this.startTime = 0;
+        this.matchStartTime = 0;
         this.isErraticMode = false;
 
         this.platforms = [];
@@ -48,31 +49,44 @@ export class GameEngine {
             p1: { lives: this.player1.lives, percent: this.player1.percentage },
             p2: { lives: this.player2.lives, percent: this.player2.percentage },
             erratic: this.isErraticMode,
-            time: ((Date.now() - this.startTime) / 1000).toFixed(1)
+            time: this.isMatchActive ? ((Date.now() - this.matchStartTime) / 1000).toFixed(1) : "0.0"
         });
     }
 
     async initAudio(sourceType, isP2Bot, file = null) {
         this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD' }, false, this, this.settings.lives, 'normal');
-
         this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' }, isP2Bot, this, this.settings.lives, this.settings.botDifficulty);
-
         this.platforms = Array.from({ length: NUM_PLATFORMS }, (_, i) => new Platform(i, this.canvas.width, this.canvas.height));
         this.items = [];
         this.particles = [];
 
-        await this.audioEngine.init(sourceType, file, this.settings.volume, () => {
-            if (!this.isGameOver) this.checkGameEnd(true);
+        await this.audioEngine.prepare(sourceType, file, this.settings.volume, () => {
+            if (!this.isGameOver && this.isMatchActive) this.checkGameEnd(true);
         });
 
         this.input.start();
-        this.startTime = Date.now();
         this.isGameOver = false;
+        this.isMatchActive = false;
         this.triggerUpdate();
         this.loop();
     }
 
+    startMatch() {
+        this.isMatchActive = true;
+        this.matchStartTime = Date.now();
+        this.audioEngine.startPlaying();
+
+        this.player1.x = this.canvas.width * 0.25;
+        this.player1.y = 50;
+        this.player2.x = this.canvas.width * 0.75;
+        this.player2.y = 50;
+        this.player1.vy = 0;
+        this.player2.vy = 0;
+    }
+
     handlePlayerCollisions() {
+        if (!this.isMatchActive) return;
+
         if (this.player1.lives <= 0 || this.player2.lives <= 0) return;
         if (this.player1.respawning || this.player2.respawning) return;
         if (this.player1.invulnerable > 0 || this.player2.invulnerable > 0) return;
@@ -95,7 +109,6 @@ export class GameEngine {
             let direction = dx > 0 ? 1 : -1;
             this.player1.vx = direction * forceP1;
             this.player1.vy = -forceP1 * 0.6;
-
             this.player2.vx = -direction * forceP2;
             this.player2.vy = -forceP2 * 0.6;
 
@@ -110,6 +123,7 @@ export class GameEngine {
     checkGameEnd(songEnded = false) {
         if (this.isGameOver) return;
         this.isGameOver = true;
+        this.isMatchActive = false;
         this.audioEngine.cleanup();
 
         let result = { type: '', color: '' };
@@ -136,29 +150,52 @@ export class GameEngine {
         } else {
             this.ctx.fillStyle = this.isErraticMode ? 'rgba(20, 0, 10, 0.4)' : 'rgba(5, 5, 16, 0.3)';
         }
-
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         const { dataArray, globalIntensity, isMicMode } = this.audioEngine.getFrequencyData();
 
-        if (dataArray) {
-            let prevErratic = this.isErraticMode;
-            this.isErraticMode = globalIntensity > 80;
-            if (prevErratic !== this.isErraticMode && Math.random() < 0.1) this.triggerUpdate();
-
-            const step = Math.floor(dataArray.length * 0.7 / NUM_PLATFORMS);
-            for (let i = 0; i < NUM_PLATFORMS; i++) {
-                let sum = 0;
-                for (let j = 0; j < step; j++) sum += dataArray[(i * step) + j];
-                let avg = sum / step;
-                if (avg < 10 && !isMicMode) avg = 0;
-
-                this.platforms[i].update(avg, this.canvas.height, this.isErraticMode);
-                this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode);
+        let progress = 0;
+        if (this.isMatchActive) {
+            if (isMicMode) {
+                progress = Math.min(1, ((Date.now() - this.matchStartTime) / 1000) / 180); // Max 3 mins
+            } else {
+                progress = this.audioEngine.getProgress();
             }
         }
 
-        if (Math.random() < 0.002) {
+        const maxDeadSides = Math.floor((NUM_PLATFORMS / 2) * 0.8);
+        const currentDeadSides = Math.floor(progress * maxDeadSides);
+
+        if (dataArray && this.isMatchActive) {
+            let prevErratic = this.isErraticMode;
+            this.isErraticMode = globalIntensity > 80;
+            if (prevErratic !== this.isErraticMode && Math.random() < 0.1) this.triggerUpdate();
+        } else {
+            this.isErraticMode = false;
+        }
+
+        const half = Math.floor(NUM_PLATFORMS / 2);
+        const step = dataArray ? Math.floor(dataArray.length * 0.7 / half) : 1;
+
+        for (let i = 0; i < half; i++) {
+            let avg = 0;
+            if (this.isMatchActive && dataArray) {
+                let sum = 0;
+                for (let j = 0; j < step; j++) sum += dataArray[(i * step) + j];
+                avg = sum / step;
+                if (avg < 10 && !isMicMode) avg = 0;
+            }
+
+            let isDeadZone = this.isMatchActive && (i < currentDeadSides);
+
+            this.platforms[i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone);
+            this.platforms[NUM_PLATFORMS - 1 - i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone);
+
+            this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone);
+            this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone);
+        }
+
+        if (this.isMatchActive && Math.random() < 0.002) {
             this.items.push(new Item(this.canvas.width, this.canvas.height));
         }
         this.items.forEach(item => {
@@ -179,7 +216,7 @@ export class GameEngine {
             if (this.particles[i].life <= 0) this.particles.splice(i, 1);
         }
 
-        if (Date.now() % 100 < 20) this.triggerUpdate();
+        if (this.isMatchActive && Date.now() % 100 < 20) this.triggerUpdate();
     };
 
     cleanup() {

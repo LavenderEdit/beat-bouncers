@@ -6,7 +6,7 @@ export const translations = {
         settings: "CONFIGURACIÓN",
         modeCpu: "Modo vs CPU",
         modeLocal: "Modo 1v1 Local",
-        uploadDesc: "Selecciona la fuente de energía sonora para el escenario. ¡La música controla la gravedad y las plataformas!",
+        uploadDesc: "Selecciona la fuente sonora. ¡La música controla la gravedad y el terreno!",
         uploadBtn: "Cargar Pista (MP3/WAV)",
         micBtn: "Usar Micrófono en Vivo",
         volMaster: "Volumen Maestro",
@@ -31,7 +31,12 @@ export const translations = {
         cpuWins: "¡LA CPU GANA!",
         p1Wins: "¡JUGADOR 1 GANA!",
         p2Wins: "¡JUGADOR 2 GANA!",
-        rematch: "MENÚ PRINCIPAL"
+        rematch: "MENÚ PRINCIPAL",
+        waitingP1: "P1: PRESIONA [W]",
+        waitingP2: "P2: PRESIONA [ARRIBA]",
+        ready: "¡LISTO!",
+        iconicPhrase: "¡QUE RETUMBE EL RITMO!",
+        suddenDeath: "¡MUERTE SÚBITA!" // <-- NUEVO
     },
     en: {
         subtitle: "SONIC SURVIVAL",
@@ -40,7 +45,7 @@ export const translations = {
         settings: "SETTINGS",
         modeCpu: "Vs CPU Mode",
         modeLocal: "Local 1v1 Mode",
-        uploadDesc: "Select the sound energy source for the stage. The music controls gravity and platforms!",
+        uploadDesc: "Select the sound source. The music controls gravity and platforms!",
         uploadBtn: "Load Track (MP3/WAV)",
         micBtn: "Use Live Microphone",
         volMaster: "Master Volume",
@@ -65,6 +70,11 @@ export const translations = {
         cpuWins: "CPU WINS!",
         p1Wins: "PLAYER 1 WINS!",
         p2Wins: "PLAYER 2 WINS!",
-        rematch: "MAIN MENU"
+        rematch: "MAIN MENU",
+        waitingP1: "P1: PRESS [W]",
+        waitingP2: "P2: PRESS [UP]",
+        ready: "READY!",
+        iconicPhrase: "LET THE BEAT DROP!",
+        suddenDeath: "SUDDEN DEATH!"
     }
 };

@@ -7,6 +7,7 @@ import { translations } from './utils/i18n';
 import MainMenu from './components/ui/MainMenu';
 import SetupMenu from './components/ui/SetupMenu';
 import SettingsMenu from './components/ui/SettingsMenu';
+import ReadyRoom from './components/ui/ReadyRoom';
 import HUD from './components/ui/HUD';
 import GameOver from './components/ui/GameOver';
 import GameCanvas from './components/GameCanvas';
@@ -38,7 +39,7 @@ export default function App() {
     setAppState('GAMEOVER');
   }, []);
 
-  const startGame = async (sourceType, file = null) => {
+  const prepareGame = async (sourceType, file = null) => {
     setAppState('LOADING');
 
     if (engineRef.current) engineRef.current.cleanup();
@@ -46,7 +47,7 @@ export default function App() {
 
     try {
       await engineRef.current.initAudio(sourceType, isP2Bot, file);
-      setAppState('PLAYING');
+      setAppState('READY_ROOM');
       setGameState({
         p1: { lives: settings.lives, percent: 0 },
         p2: { lives: settings.lives, percent: 0 },
@@ -59,6 +60,13 @@ export default function App() {
       setAppState('MENU');
     }
   };
+
+  const startMatch = useCallback(() => {
+    if (engineRef.current) {
+      engineRef.current.startMatch();
+      setAppState('PLAYING');
+    }
+  }, []);
 
   const returnToMenu = () => {
     if (engineRef.current) engineRef.current.cleanup();
@@ -81,7 +89,7 @@ export default function App() {
       )}
 
       {appState === 'SETUP' && (
-        <SetupMenu isP2Bot={isP2Bot} setAppState={setAppState} onStartFile={(file) => startGame('file', file)} onStartMic={() => startGame('mic')} language={settings.language} />
+        <SetupMenu isP2Bot={isP2Bot} setAppState={setAppState} onStartFile={(file) => prepareGame('file', file)} onStartMic={() => prepareGame('mic')} language={settings.language} />
       )}
 
       {appState === 'SETTINGS' && (
@@ -95,6 +103,10 @@ export default function App() {
             {t.loading}
           </div>
         </div>
+      )}
+
+      {appState === 'READY_ROOM' && (
+        <ReadyRoom engineRef={engineRef} isP2Bot={isP2Bot} language={settings.language} onStartMatch={startMatch} />
       )}
 
       {appState === 'PLAYING' && (

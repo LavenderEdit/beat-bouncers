@@ -6,9 +6,11 @@ export class AudioEngine {
         this.gainNode = null;
         this.dataArray = null;
         this.isMicMode = false;
+        this.duration = 180;
+        this.startTime = 0;
     }
 
-    async init(sourceType, file, volume = 0.5, onSongEnded) {
+    async prepare(sourceType, file, volume = 0.5, onSongEnded) {
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         this.analyser = this.audioCtx.createAnalyser();
         this.analyser.fftSize = 512;
@@ -21,6 +23,8 @@ export class AudioEngine {
             this.isMicMode = false;
             const arrayBuffer = await file.arrayBuffer();
             const audioBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
+            this.duration = audioBuffer.duration;
+
             this.source = this.audioCtx.createBufferSource();
             this.source.buffer = audioBuffer;
 
@@ -28,14 +32,31 @@ export class AudioEngine {
             this.analyser.connect(this.gainNode);
             this.gainNode.connect(this.audioCtx.destination);
 
-            this.source.start(0);
             this.source.onended = onSongEnded;
         } else if (sourceType === 'mic') {
             this.isMicMode = true;
+            this.duration = 180;
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.source = this.audioCtx.createMediaStreamSource(stream);
             this.source.connect(this.analyser);
         }
+        return this.duration;
+    }
+
+    startPlaying() {
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+        if (this.source && !this.isMicMode) {
+            this.source.start(0);
+        }
+        this.startTime = this.audioCtx.currentTime;
+    }
+
+    getProgress() {
+        if (!this.audioCtx || this.isMicMode) return 0;
+        const current = this.audioCtx.currentTime - this.startTime;
+        return Math.min(1, current / this.duration);
     }
 
     getFrequencyData() {

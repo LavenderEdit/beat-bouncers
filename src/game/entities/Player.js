@@ -5,12 +5,9 @@ export class Player {
     constructor(id, color, startX, controls, isBot, engine, maxLives, botDifficulty = 'normal') {
         this.id = id;
         this.engine = engine;
-        this.width = 35;
-        this.height = 35;
-        this.x = startX;
-        this.y = 100;
-        this.vx = 0;
-        this.vy = 0;
+        this.width = 35; this.height = 35;
+        this.x = startX; this.y = 100;
+        this.vx = 0; this.vy = 0;
         this.color = color;
         this.controls = controls;
         this.isBot = isBot;
@@ -26,11 +23,19 @@ export class Player {
         this.percentage = 0;
         this.invulnerable = 0;
         this.respawning = false;
+
+        this.facingRight = id === 'p1';
+        this.isDashing = false;
+        this.dashTimer = 0;
+        this.dashCooldown = 0;
+        this.flightTimer = 0;
     }
 
     update(opponent) {
         if (this.lives <= 0) return;
         if (this.invulnerable > 0) this.invulnerable--;
+        if (this.dashCooldown > 0) this.dashCooldown--;
+        if (this.flightTimer > 0) this.flightTimer--;
 
         if (this.respawning) {
             this.y += 2;
@@ -38,14 +43,26 @@ export class Player {
             return;
         }
 
-        if (this.isBot) {
+        if (this.isBot && this.engine.isMatchActive) {
             this.doBotLogic(opponent);
         } else {
-            if (this.engine.input.isPressed(this.controls.left)) this.vx -= 1.5;
-            else if (this.engine.input.isPressed(this.controls.right)) this.vx += 1.5;
+            if (this.engine.input.isPressed(this.controls.left)) {
+                this.vx -= 1.5;
+                this.facingRight = false;
+            } else if (this.engine.input.isPressed(this.controls.right)) {
+                this.vx += 1.5;
+                this.facingRight = true;
+            }
+
+            if (this.engine.input.isPressed(this.controls.dash) && this.dashCooldown <= 0 && !this.isDashing) {
+                this.startDash();
+            }
 
             if (this.engine.input.isPressed(this.controls.up)) {
-                if (this.isGrounded || this.jumps > 0) {
+                if (this.flightTimer > 0) {
+                    this.vy = -8;
+                    this.spawnParticles(2, '#00ffff');
+                } else if (this.isGrounded || this.jumps > 0) {
                     this.vy = this.jumpForce;
                     this.isGrounded = false;
                     this.jumps--;
@@ -55,13 +72,21 @@ export class Player {
             }
         }
 
-        this.vx *= this.isGrounded ? 0.8 : 0.95;
-        if (Math.abs(this.vx) > this.speed && this.invulnerable === 0) {
-            this.vx = Math.sign(this.vx) * this.speed;
-        }
+        if (this.isDashing) {
+            this.vy = 0;
+            this.vx = this.facingRight ? 25 : -25;
+            this.dashTimer--;
+            this.spawnParticles(1, 'white');
+            if (this.dashTimer <= 0) this.isDashing = false;
+        } else {
+            this.vx *= this.isGrounded ? 0.8 : 0.95;
+            if (Math.abs(this.vx) > this.speed && this.invulnerable === 0) {
+                this.vx = Math.sign(this.vx) * this.speed;
+            }
 
-        this.vy += GRAVITY;
-        if (this.vy > TERMINAL_VELOCITY && this.invulnerable === 0) this.vy = TERMINAL_VELOCITY;
+            this.vy += GRAVITY;
+            if (this.vy > TERMINAL_VELOCITY && this.invulnerable === 0) this.vy = TERMINAL_VELOCITY;
+        }
 
         this.x += this.vx;
         this.y += this.vy;
@@ -73,44 +98,53 @@ export class Player {
         }
     }
 
+    startDash() {
+        this.isDashing = true;
+        this.dashTimer = 12;
+        this.dashCooldown = 120;
+        this.engine.input.keys[this.controls.dash] = false;
+    }
+
     doBotLogic(opp) {
         let targetX = this.engine.canvas.width / 2;
-
         let trackingDistance = 20;
         let speedMult = 1.0;
         let jumpReaction = 0.1;
         let itemAgro = 30;
 
         if (this.botDifficulty === 'easy') {
-            trackingDistance = 60;
-            speedMult = 0.6;
-            jumpReaction = 0.4;
-            itemAgro = 60;
+            trackingDistance = 60; speedMult = 0.6; jumpReaction = 0.4; itemAgro = 60;
         } else if (this.botDifficulty === 'hard') {
-            trackingDistance = 5;
-            speedMult = 1.4;
-            jumpReaction = 0.0;
-            itemAgro = 10;
+            trackingDistance = 5; speedMult = 1.4; jumpReaction = 0.0; itemAgro = 10;
         }
 
-        if (this.botDifficulty === 'easy' && Math.random() < 0.02) {
-            targetX = this.x; // Se queda quieto
-        } else {
-            if (opp.lives > 0 && !opp.respawning) targetX = opp.x;
-
-            let closestItem = this.engine.items.find(i => i.active && i.y > 0);
-            if (closestItem && this.percentage > itemAgro) targetX = closestItem.x;
+        let closestItem = this.engine.items.find(i => i.active && i.y > 0);
+        if (closestItem && this.percentage > itemAgro) {
+            targetX = closestItem.x;
+        } else if (opp.lives > 0 && !opp.respawning) {
+            targetX = opp.x;
         }
 
-        if (targetX < this.x - trackingDistance) this.vx -= 1 * speedMult;
-        else if (targetX > this.x + trackingDistance) this.vx += 1 * speedMult;
+        if (targetX < this.x - trackingDistance) {
+            this.vx -= 1 * speedMult;
+            this.facingRight = false;
+        } else if (targetX > this.x + trackingDistance) {
+            this.vx += 1 * speedMult;
+            this.facingRight = true;
+        }
+
+        if (this.botDifficulty !== 'easy' && Math.abs(targetX - this.x) > 100 && Math.abs(targetX - this.x) < 200 && this.dashCooldown <= 0 && Math.random() < 0.05) {
+            this.startDash();
+        }
 
         let platformBelow = this.engine.platforms.find(p => this.x > p.x - 20 && this.x < p.x + p.width + 20 && p.targetY > 0 && p.targetY < this.engine.canvas.height);
         let dangerFalling = this.y > this.engine.canvas.height - 200 && !platformBelow;
         let enemyAbove = (opp.lives > 0 && opp.y < this.y - 100 && Math.abs(opp.x - this.x) < 100);
 
         if (dangerFalling || enemyAbove) {
-            if ((this.isGrounded || this.jumps > 0) && Math.random() > jumpReaction) {
+            if (this.flightTimer > 0) {
+                this.vy = -8;
+            } else if ((this.isGrounded || this.jumps > 0) && Math.random() > jumpReaction) {
                 this.vy = this.jumpForce;
                 this.isGrounded = false;
                 this.jumps--;
@@ -121,6 +155,8 @@ export class Player {
 
     checkCollisions() {
         this.isGrounded = false;
+        if (this.isDashing) return;
+
         for (let plat of this.engine.platforms) {
             if (plat.y > this.engine.canvas.height - 10) continue;
             if (this.x < plat.x + plat.width &&
@@ -138,8 +174,22 @@ export class Player {
     }
 
     loseLife() {
+        if (!this.engine.isMatchActive) {
+            this.y = -50; this.x = this.engine.canvas.width / 2;
+            this.vy = 0; this.vx = 0;
+            return;
+        }
+
+        if (this.engine.isSuddenDeath) {
+            this.lives = 0;
+            this.spawnParticles(100, '#ff0000', true);
+            this.engine.checkGameEnd();
+            return;
+        }
+
         this.lives--;
         this.percentage = 0;
+        this.flightTimer = 0;
         this.spawnParticles(50, this.color, true);
         this.engine.triggerUpdate();
 
@@ -157,7 +207,6 @@ export class Player {
 
     spawnParticles(amount = 10, colorStr = this.color, isExplosion = false) {
         if (!this.engine.settings.particles) return;
-
         for (let i = 0; i < amount; i++) {
             this.engine.particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, colorStr, isExplosion));
         }
@@ -171,15 +220,30 @@ export class Player {
         let visualColor = this.color;
         if (this.percentage > 50) visualColor = '#ffaa00';
         if (this.percentage > 100) visualColor = '#ff0000';
+        if (this.dashCooldown === 0) visualColor = '#ffffff';
 
-        ctx.shadowBlur = 20;
+        if (this.flightTimer > 0) {
+            ctx.fillStyle = '#00ffff';
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.shadowBlur = this.isDashing ? 30 : 20;
         ctx.shadowColor = visualColor;
         ctx.fillStyle = visualColor;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
 
-        ctx.fillStyle = 'white';
+        if (this.isDashing) {
+            ctx.fillRect(this.x - 10, this.y + 5, this.width + 20, this.height - 10);
+        } else {
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+
+        ctx.fillStyle = 'black';
         ctx.shadowBlur = 0;
-        let eyeOffset = this.vx > 1 ? 8 : (this.vx < -1 ? -8 : 0);
+        let eyeOffset = this.facingRight ? 8 : -8;
         ctx.fillRect(this.x + 6 + eyeOffset, this.y + 8, 6, 6);
         ctx.fillRect(this.x + 22 + eyeOffset, this.y + 8, 6, 6);
 
@@ -187,7 +251,14 @@ export class Player {
             ctx.fillStyle = 'white';
             ctx.font = 'bold 16px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(`${this.percentage}%`, this.x + this.width / 2, this.y - 10);
+            ctx.fillText(`${this.percentage}%`, this.x + this.width / 2, this.y - 15);
+
+            if (this.dashCooldown > 0) {
+                ctx.fillStyle = 'gray';
+                ctx.fillRect(this.x, this.y + this.height + 5, this.width, 3);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(this.x, this.y + this.height + 5, this.width * (1 - this.dashCooldown / 120), 3);
+            }
         }
         ctx.globalAlpha = 1.0;
     }
