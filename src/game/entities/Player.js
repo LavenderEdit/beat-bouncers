@@ -2,7 +2,7 @@ import { GRAVITY, TERMINAL_VELOCITY } from '../../config/constants';
 import { Particle } from './Particle';
 
 export class Player {
-    constructor(id, color, startX, controls, isBot, engine, maxLives) {
+    constructor(id, color, startX, controls, isBot, engine, maxLives, botDifficulty = 'normal') {
         this.id = id;
         this.engine = engine;
         this.width = 35;
@@ -14,6 +14,7 @@ export class Player {
         this.color = color;
         this.controls = controls;
         this.isBot = isBot;
+        this.botDifficulty = botDifficulty;
 
         this.speed = 8;
         this.jumpForce = -15;
@@ -74,20 +75,42 @@ export class Player {
 
     doBotLogic(opp) {
         let targetX = this.engine.canvas.width / 2;
-        if (opp.lives > 0 && !opp.respawning) targetX = opp.x;
 
-        let closestItem = this.engine.items.find(i => i.active && i.y > 0);
-        if (closestItem && this.percentage > 30) targetX = closestItem.x;
+        let trackingDistance = 20;
+        let speedMult = 1.0;
+        let jumpReaction = 0.1;
+        let itemAgro = 30;
 
-        if (targetX < this.x - 20) this.vx -= 1;
-        else if (targetX > this.x + 20) this.vx += 1;
+        if (this.botDifficulty === 'easy') {
+            trackingDistance = 60;
+            speedMult = 0.6;
+            jumpReaction = 0.4;
+            itemAgro = 60;
+        } else if (this.botDifficulty === 'hard') {
+            trackingDistance = 5;
+            speedMult = 1.4;
+            jumpReaction = 0.0;
+            itemAgro = 10;
+        }
+
+        if (this.botDifficulty === 'easy' && Math.random() < 0.02) {
+            targetX = this.x; // Se queda quieto
+        } else {
+            if (opp.lives > 0 && !opp.respawning) targetX = opp.x;
+
+            let closestItem = this.engine.items.find(i => i.active && i.y > 0);
+            if (closestItem && this.percentage > itemAgro) targetX = closestItem.x;
+        }
+
+        if (targetX < this.x - trackingDistance) this.vx -= 1 * speedMult;
+        else if (targetX > this.x + trackingDistance) this.vx += 1 * speedMult;
 
         let platformBelow = this.engine.platforms.find(p => this.x > p.x - 20 && this.x < p.x + p.width + 20 && p.targetY > 0 && p.targetY < this.engine.canvas.height);
         let dangerFalling = this.y > this.engine.canvas.height - 200 && !platformBelow;
         let enemyAbove = (opp.lives > 0 && opp.y < this.y - 100 && Math.abs(opp.x - this.x) < 100);
 
         if (dangerFalling || enemyAbove) {
-            if ((this.isGrounded || this.jumps > 0) && Math.random() > 0.1) {
+            if ((this.isGrounded || this.jumps > 0) && Math.random() > jumpReaction) {
                 this.vy = this.jumpForce;
                 this.isGrounded = false;
                 this.jumps--;

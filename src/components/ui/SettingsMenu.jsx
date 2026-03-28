@@ -16,9 +16,9 @@ export default function SettingsMenu({ settings, setSettings, setAppState }) {
     return (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/60 backdrop-blur-md">
             <div className="bg-[#0a0a19]/90 border border-white/10 p-10 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8)] max-w-lg w-full text-center">
-                <h2 className="text-4xl font-black mb-8 text-white">{t.settings}</h2>
+                <h2 className="text-4xl font-black mb-6 text-white">{t.settings}</h2>
 
-                <div className="flex flex-col gap-6 text-left mb-10">
+                <div className="flex flex-col gap-5 text-left mb-8">
 
                     {/* Volumen */}
                     <div>
@@ -48,14 +48,25 @@ export default function SettingsMenu({ settings, setSettings, setAppState }) {
                         </div>
                     </div>
 
-                    {/* Tema Visual */}
-                    <div>
-                        <label className="text-gray-300 font-bold mb-2 block">{t.theme}</label>
-                        <select value={localSet.theme} onChange={(e) => setLocalSet({ ...localSet, theme: e.target.value })} className="w-full bg-gray-800 text-white border border-gray-600 rounded-xl p-3 outline-none">
-                            <option value="neon">{t.themeNeon}</option>
-                            <option value="matrix">{t.themeMatrix}</option>
-                            <option value="blood">{t.themeBlood}</option>
-                        </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Tema Visual */}
+                        <div>
+                            <label className="text-gray-300 font-bold mb-2 block">{t.theme}</label>
+                            <select value={localSet.theme} onChange={(e) => setLocalSet({ ...localSet, theme: e.target.value })} className="w-full bg-gray-800 text-white border border-gray-600 rounded-xl p-3 outline-none">
+                                <option value="neon">{t.themeNeon}</option>
+                                <option value="matrix">{t.themeMatrix}</option>
+                                <option value="blood">{t.themeBlood}</option>
+                            </select>
+                        </div>
+                        {/* Dificultad del Bot */}
+                        <div>
+                            <label className="text-gray-300 font-bold mb-2 block">{t.botDifficulty}</label>
+                            <select value={localSet.botDifficulty} onChange={(e) => setLocalSet({ ...localSet, botDifficulty: e.target.value })} className="w-full bg-gray-800 text-white border border-gray-600 rounded-xl p-3 outline-none">
+                                <option value="easy">{t.diffEasy}</option>
+                                <option value="normal">{t.diffNormal}</option>
+                                <option value="hard">{t.diffHard}</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Partículas */}

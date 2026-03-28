@@ -5,7 +5,8 @@ export const defaultSettings = {
     language: 'es',
     particles: true,
     lives: 3,
-    theme: 'neon'
+    theme: 'neon',
+    botDifficulty: 'normal'
 };
 
 export const loadSettings = () => {

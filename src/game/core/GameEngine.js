@@ -53,8 +53,10 @@ export class GameEngine {
     }
 
     async initAudio(sourceType, isP2Bot, file = null) {
-        this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD' }, false, this, this.settings.lives);
-        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' }, isP2Bot, this, this.settings.lives);
+        this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD' }, false, this, this.settings.lives, 'normal');
+
+        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' }, isP2Bot, this, this.settings.lives, this.settings.botDifficulty);
+
         this.platforms = Array.from({ length: NUM_PLATFORMS }, (_, i) => new Platform(i, this.canvas.width, this.canvas.height));
         this.items = [];
         this.particles = [];
