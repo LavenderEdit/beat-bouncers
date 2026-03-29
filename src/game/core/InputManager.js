@@ -19,7 +19,34 @@ export class InputManager {
         window.removeEventListener('keyup', this.handleKeyUp);
         this.keys = {};
     }
-    isPressed(keyCode) {
-        return !!this.keys[keyCode];
+
+    isPressed(keyCode, playerIdx = -1) {
+        if (this.keys[keyCode]) return true;
+
+        if (playerIdx >= 0) {
+            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+            const pad = gamepads[playerIdx];
+
+            if (pad) {
+
+                if (keyCode === 'KeyA' || keyCode === 'ArrowLeft') {
+                    return pad.axes[0] < -0.4 || pad.buttons[14]?.pressed;
+                }
+                if (keyCode === 'KeyD' || keyCode === 'ArrowRight') {
+                    return pad.axes[0] > 0.4 || pad.buttons[15]?.pressed;
+                }
+                if (keyCode === 'KeyW' || keyCode === 'ArrowUp') {
+                    return pad.axes[1] < -0.4 || pad.buttons[12]?.pressed || pad.buttons[0]?.pressed;
+                }
+                if (keyCode === 'KeyF' || keyCode === 'ShiftRight') {
+                    return pad.buttons[2]?.pressed || pad.buttons[5]?.pressed;
+                }
+                // Controles del Ready Room (Confirmar)
+                if (keyCode === 'KeyS' || keyCode === 'ArrowDown') {
+                    return pad.buttons[0]?.pressed || pad.buttons[9]?.pressed; // Start o A
+                }
+            }
+        }
+        return false;
     }
 }

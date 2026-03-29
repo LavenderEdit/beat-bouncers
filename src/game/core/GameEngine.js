@@ -4,6 +4,7 @@ import { AudioEngine } from './AudioEngine';
 import { Player } from '../entities/Player';
 import { Platform } from '../entities/Platform';
 import { Item } from '../entities/Item';
+import { DissonanceOrb } from '../entities/DissonanceOrb';
 
 export class GameEngine {
     constructor(canvas, onStateUpdate, onGameOver, settings) {
@@ -18,18 +19,26 @@ export class GameEngine {
 
         this.isGameOver = false;
         this.isMatchActive = false;
+        this.isSuddenDeath = false;
         this.animationId = null;
         this.matchStartTime = 0;
         this.isErraticMode = false;
 
+        this.shakeFrames = 0;
+
         this.platforms = [];
         this.items = [];
+        this.orbs = [];
         this.particles = [];
         this.player1 = null;
         this.player2 = null;
 
         this.resizeCanvas();
         window.addEventListener('resize', this.resizeCanvas.bind(this));
+    }
+
+    shakeScreen(frames) {
+        this.shakeFrames = frames;
     }
 
     resizeCanvas() {
@@ -49,13 +58,14 @@ export class GameEngine {
             p1: { lives: this.player1.lives, percent: this.player1.percentage },
             p2: { lives: this.player2.lives, percent: this.player2.percentage },
             erratic: this.isErraticMode,
+            suddenDeath: this.isSuddenDeath,
             time: this.isMatchActive ? ((Date.now() - this.matchStartTime) / 1000).toFixed(1) : "0.0"
         });
     }
 
     async initAudio(sourceType, isP2Bot, file = null) {
-        this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD' }, false, this, this.settings.lives, 'normal');
-        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' }, isP2Bot, this, this.settings.lives, this.settings.botDifficulty);
+        this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD', dash: 'KeyF' }, false, this, this.settings.lives, 'normal');
+        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', dash: 'ShiftRight' }, isP2Bot, this, this.settings.lives, this.settings.botDifficulty);
         this.platforms = Array.from({ length: NUM_PLATFORMS }, (_, i) => new Platform(i, this.canvas.width, this.canvas.height));
         this.items = [];
         this.particles = [];
@@ -64,6 +74,7 @@ export class GameEngine {
             if (!this.isGameOver && this.isMatchActive) this.checkGameEnd(true);
         });
 
+        this.isSuddenDeath = false;
         this.input.start();
         this.isGameOver = false;
         this.isMatchActive = false;
@@ -86,7 +97,6 @@ export class GameEngine {
 
     handlePlayerCollisions() {
         if (!this.isMatchActive) return;
-
         if (this.player1.lives <= 0 || this.player2.lives <= 0) return;
         if (this.player1.respawning || this.player2.respawning) return;
         if (this.player1.invulnerable > 0 || this.player2.invulnerable > 0) return;
@@ -97,14 +107,17 @@ export class GameEngine {
             this.player1.y + this.player1.height > this.player2.y) {
 
             let dx = (this.player1.x + this.player1.width / 2) - (this.player2.x + this.player2.width / 2);
-            let dmg = Math.floor(Math.random() * 8) + 5 + (this.isErraticMode ? 10 : 0);
+            let baseDmg = Math.floor(Math.random() * 8) + 5;
 
-            this.player1.percentage += dmg;
-            this.player2.percentage += dmg;
+            let dmgP1ToP2 = baseDmg * (this.player1.isDashing ? 2.5 : 1);
+            let dmgP2ToP1 = baseDmg * (this.player2.isDashing ? 2.5 : 1);
+
+            this.player1.percentage += dmgP2ToP1;
+            this.player2.percentage += dmgP1ToP2;
 
             let baseForce = 8;
-            let forceP1 = baseForce * (1 + (this.player1.percentage / 40));
-            let forceP2 = baseForce * (1 + (this.player2.percentage / 40));
+            let forceP1 = baseForce * (1 + (this.player1.percentage / 40)) * (this.player2.isDashing ? 1.8 : 1);
+            let forceP2 = baseForce * (1 + (this.player2.percentage / 40)) * (this.player1.isDashing ? 1.8 : 1);
 
             let direction = dx > 0 ? 1 : -1;
             this.player1.vx = direction * forceP1;
@@ -114,9 +127,23 @@ export class GameEngine {
 
             this.player1.invulnerable = 30;
             this.player2.invulnerable = 30;
-            this.player1.spawnParticles(20, 'white', true);
+            this.player1.spawnParticles(30, 'white', true);
+
+            if (this.player1.isDashing || this.player2.isDashing) {
+                this.shakeScreen(15);
+            } else {
+                this.shakeScreen(5);
+            }
 
             this.triggerUpdate();
+
+            const KO_THRESHOLD = 200;
+            if (this.player1.percentage >= KO_THRESHOLD && !this.player1.respawning) {
+                this.player1.loseLife();
+            }
+            if (this.player2.percentage >= KO_THRESHOLD && !this.player2.respawning) {
+                this.player2.loseLife();
+            }
         }
     }
 
@@ -143,6 +170,14 @@ export class GameEngine {
         if (this.isGameOver) return;
         this.animationId = requestAnimationFrame(this.loop);
 
+        this.ctx.save();
+        if (this.shakeFrames > 0) {
+            this.shakeFrames--;
+            const shakeX = (Math.random() - 0.5) * 15;
+            const shakeY = (Math.random() - 0.5) * 15;
+            this.ctx.translate(shakeX, shakeY);
+        }
+
         if (this.settings.theme === 'matrix') {
             this.ctx.fillStyle = this.isErraticMode ? 'rgba(0, 30, 0, 0.4)' : 'rgba(0, 8, 0, 0.3)';
         } else if (this.settings.theme === 'blood') {
@@ -156,8 +191,8 @@ export class GameEngine {
 
         let progress = 0;
         if (this.isMatchActive) {
-            if (isMicMode) {
-                progress = Math.min(1, ((Date.now() - this.matchStartTime) / 1000) / 180); // Max 3 mins
+            if (this.audioEngine.isMicMode) {
+                progress = Math.min(1, ((Date.now() - this.matchStartTime) / 1000) / 180);
             } else {
                 progress = this.audioEngine.getProgress();
             }
@@ -166,10 +201,21 @@ export class GameEngine {
         const maxDeadSides = Math.floor((NUM_PLATFORMS / 2) * 0.8);
         const currentDeadSides = Math.floor(progress * maxDeadSides);
 
+        if (this.isMatchActive && progress >= 0.95 && !this.isSuddenDeath) {
+            this.isSuddenDeath = true;
+            this.triggerUpdate();
+        }
+
         if (dataArray && this.isMatchActive) {
             let prevErratic = this.isErraticMode;
             this.isErraticMode = globalIntensity > 80;
             if (prevErratic !== this.isErraticMode && Math.random() < 0.1) this.triggerUpdate();
+
+            if ((this.isErraticMode || this.isSuddenDeath) && Math.random() < 0.03) {
+                if (this.orbs.filter(o => o.active).length < 4) {
+                    this.orbs.push(new DissonanceOrb(this.canvas.width, this.canvas.height));
+                }
+            }
         } else {
             this.isErraticMode = false;
         }
@@ -186,22 +232,29 @@ export class GameEngine {
                 if (avg < 10 && !isMicMode) avg = 0;
             }
 
-            let isDeadZone = this.isMatchActive && (i < currentDeadSides);
+            if (!this.isErraticMode) avg = avg * 0.5;
 
+            let isDeadZone = this.isMatchActive && (i < currentDeadSides);
             this.platforms[i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone);
             this.platforms[NUM_PLATFORMS - 1 - i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone);
-
             this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone);
             this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone);
         }
 
-        if (this.isMatchActive && Math.random() < 0.002) {
+        if (this.isMatchActive && Math.random() < 0.004) {
             this.items.push(new Item(this.canvas.width, this.canvas.height));
-        }
-        this.items.forEach(item => {
+        } this.items.forEach(item => {
             item.update([this.player1, this.player2], () => this.triggerUpdate());
             item.draw(this.ctx);
         });
+
+        for (let i = this.orbs.length - 1; i >= 0; i--) {
+            this.orbs[i].update([this.player1, this.player2], () => this.triggerUpdate(), this);
+            this.orbs[i].draw(this.ctx);
+            if (!this.orbs[i].active && this.orbs[i].y > this.canvas.height) {
+                this.orbs.splice(i, 1);
+            }
+        }
 
         this.player1.update(this.player2);
         this.player2.update(this.player1);
@@ -217,6 +270,8 @@ export class GameEngine {
         }
 
         if (this.isMatchActive && Date.now() % 100 < 20) this.triggerUpdate();
+
+        this.ctx.restore();
     };
 
     cleanup() {

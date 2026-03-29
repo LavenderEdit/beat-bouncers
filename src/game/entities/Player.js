@@ -43,22 +43,24 @@ export class Player {
             return;
         }
 
+        const pIdx = this.id === 'p1' ? 0 : 1;
+
         if (this.isBot && this.engine.isMatchActive) {
             this.doBotLogic(opponent);
         } else {
-            if (this.engine.input.isPressed(this.controls.left)) {
+            if (this.engine.input.isPressed(this.controls.left, pIdx)) {
                 this.vx -= 1.5;
                 this.facingRight = false;
-            } else if (this.engine.input.isPressed(this.controls.right)) {
+            } else if (this.engine.input.isPressed(this.controls.right, pIdx)) {
                 this.vx += 1.5;
                 this.facingRight = true;
             }
 
-            if (this.engine.input.isPressed(this.controls.dash) && this.dashCooldown <= 0 && !this.isDashing) {
+            if (this.engine.input.isPressed(this.controls.dash, pIdx) && this.dashCooldown <= 0 && !this.isDashing) {
                 this.startDash();
             }
 
-            if (this.engine.input.isPressed(this.controls.up)) {
+            if (this.engine.input.isPressed(this.controls.up, pIdx)) {
                 if (this.flightTimer > 0) {
                     this.vy = -8;
                     this.spawnParticles(2, '#00ffff');
@@ -91,10 +93,31 @@ export class Player {
         this.x += this.vx;
         this.y += this.vy;
 
-        if (this.y > this.engine.canvas.height + 50 || this.x < -100 || this.x > this.engine.canvas.width + 100) {
-            this.loseLife();
-        } else {
+        if (!this.engine.isSuddenDeath) {
+            if (this.y > this.engine.canvas.height + 50) {
+                this.y = -this.height;
+                this.vy *= 0.8;
+            } else if (this.y < -this.height - 100) {
+                this.y = this.engine.canvas.height + 50;
+                this.vy *= 0.8;
+            }
+
+            if (this.x < -this.width) {
+                this.x = this.engine.canvas.width;
+            } else if (this.x > this.engine.canvas.width) {
+                this.x = -this.width;
+            }
+
             this.checkCollisions();
+        } else {
+            if (this.x < -this.width) this.x = this.engine.canvas.width;
+            if (this.x > this.engine.canvas.width) this.x = -this.width;
+
+            if (this.y > this.engine.canvas.height + 50) {
+                this.loseLife();
+            } else {
+                this.checkCollisions();
+            }
         }
     }
 
@@ -138,7 +161,8 @@ export class Player {
         }
 
         let platformBelow = this.engine.platforms.find(p => this.x > p.x - 20 && this.x < p.x + p.width + 20 && p.targetY > 0 && p.targetY < this.engine.canvas.height);
-        let dangerFalling = this.y > this.engine.canvas.height - 200 && !platformBelow;
+
+        let dangerFalling = this.engine.isSuddenDeath && this.y > this.engine.canvas.height - 200 && !platformBelow;
         let enemyAbove = (opp.lives > 0 && opp.y < this.y - 100 && Math.abs(opp.x - this.x) < 100);
 
         if (dangerFalling || enemyAbove) {
@@ -219,7 +243,7 @@ export class Player {
 
         let visualColor = this.color;
         if (this.percentage > 50) visualColor = '#ffaa00';
-        if (this.percentage > 100) visualColor = '#ff0000';
+        if (this.percentage >= 200) visualColor = '#ff0000';
         if (this.dashCooldown === 0) visualColor = '#ffffff';
 
         if (this.flightTimer > 0) {

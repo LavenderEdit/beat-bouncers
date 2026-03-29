@@ -36,7 +36,7 @@ export const translations = {
         waitingP2: "P2: PRESIONA [ARRIBA]",
         ready: "¡LISTO!",
         iconicPhrase: "¡QUE RETUMBE EL RITMO!",
-        suddenDeath: "¡MUERTE SÚBITA!" // <-- NUEVO
+        suddenDeath: "¡MUERTE SÚBITA!"
     },
     en: {
         subtitle: "SONIC SURVIVAL",
