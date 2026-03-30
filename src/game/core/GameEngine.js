@@ -30,6 +30,8 @@ export class GameEngine {
         this.isErraticMode = false;
         this.shakeFrames = 0;
 
+        this.frameCount = 0;
+
         this.platforms = [];
         this.items = [];
         this.orbs = [];
@@ -90,6 +92,7 @@ export class GameEngine {
         this.isMatchActive = false;
         this.isSuddenDeath = false;
         this.sdTransition = false;
+        this.frameCount = 0;
         this.triggerUpdate();
         this.loop();
     }
@@ -134,11 +137,10 @@ export class GameEngine {
             }
 
             let dx = (this.player1.x + this.player1.width / 2) - (this.player2.x + this.player2.width / 2);
+            let baseDmg = Math.floor(Math.random() * 10) + 10;
 
-            let baseDmg = Math.floor(Math.random() * 15) + 15;
-
-            let dmgP1ToP2 = baseDmg * (this.player1.isDashing ? 3.5 : 1);
-            let dmgP2ToP1 = baseDmg * (this.player2.isDashing ? 3.5 : 1);
+            let dmgP1ToP2 = baseDmg * (this.player1.isDashing ? 3 : 1);
+            let dmgP2ToP1 = baseDmg * (this.player2.isDashing ? 3 : 1);
 
             this.player1.percentage += dmgP2ToP1;
             this.player2.percentage += dmgP1ToP2;
@@ -200,6 +202,8 @@ export class GameEngine {
     loop = () => {
         if (this.isGameOver) return;
         this.animationId = requestAnimationFrame(this.loop);
+
+        this.frameCount++;
 
         this.ctx.save();
         if (this.shakeFrames > 0) {
@@ -299,7 +303,7 @@ export class GameEngine {
             this.platforms[i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone, this.isSuddenDeath);
             this.platforms[NUM_PLATFORMS - 1 - i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone, this.isSuddenDeath);
             this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone, this.settings.theme);
-            this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone, this.settings.theme);
+            this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, this.isDeadZone, this.settings.theme);
         }
 
         if (this.isMatchActive && Math.random() < 0.004) {
@@ -331,7 +335,7 @@ export class GameEngine {
             if (this.particles[i].life <= 0) this.particles.splice(i, 1);
         }
 
-        if (this.isMatchActive && Date.now() % 100 < 20) this.triggerUpdate();
+        if (this.isMatchActive && this.frameCount % 5 === 0) this.triggerUpdate();
 
         this.ctx.restore();
     };

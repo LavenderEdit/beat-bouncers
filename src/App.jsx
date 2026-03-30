@@ -11,6 +11,7 @@ import ReadyRoom from './components/ui/ReadyRoom';
 import HUD from './components/ui/HUD';
 import GameOver from './components/ui/GameOver';
 import GameCanvas from './components/GameCanvas';
+import TouchControls from './components/ui/TouchControls';
 
 export default function App() {
   const canvasRef = useRef(null);
@@ -129,6 +130,10 @@ export default function App() {
 
       {appState === 'GAMEOVER' && (
         <GameOver endResult={endResult} onRestart={returnToMenu} language={settings.language} />
+      )}
+
+      {(appState === 'PLAYING' || appState === 'READY_ROOM') && (
+        <TouchControls engineRef={engineRef} />
       )}
     </div>
   );

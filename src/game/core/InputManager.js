@@ -10,14 +10,24 @@ export class InputManager {
             this.keys[e.key] = false;
         };
     }
+
     start() {
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
     }
+
     stop() {
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.keys = {};
+    }
+
+    simulateKeyPress(keyCode) {
+        this.keys[keyCode] = true;
+    }
+
+    simulateKeyRelease(keyCode) {
+        this.keys[keyCode] = false;
     }
 
     isPressed(keyCode, playerIdx = -1) {
