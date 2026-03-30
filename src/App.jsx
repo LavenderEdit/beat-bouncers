@@ -27,6 +27,10 @@ export default function App() {
     p1: { lives: settings.lives, percent: 0 },
     p2: { lives: settings.lives, percent: 0 },
     erratic: false,
+    suddenDeath: false,
+    sdTransition: false,
+    sdCountdown: 0,
+    sdTimeLeft: 0,
     time: "0.0"
   });
 
@@ -39,19 +43,23 @@ export default function App() {
     setAppState('GAMEOVER');
   }, []);
 
-  const prepareGame = async (sourceType, file = null) => {
+  const prepareGame = async (sourceType, fileOrUrl = null) => {
     setAppState('LOADING');
 
     if (engineRef.current) engineRef.current.cleanup();
     engineRef.current = new GameEngine(canvasRef.current, handleStateUpdate, handleGameOver, settings);
 
     try {
-      await engineRef.current.initAudio(sourceType, isP2Bot, file);
+      await engineRef.current.initAudio(sourceType, isP2Bot, fileOrUrl);
       setAppState('READY_ROOM');
       setGameState({
         p1: { lives: settings.lives, percent: 0 },
         p2: { lives: settings.lives, percent: 0 },
         erratic: false,
+        suddenDeath: false,
+        sdTransition: false,
+        sdCountdown: 0,
+        sdTimeLeft: 0,
         time: "0.0"
       });
     } catch (err) {
@@ -81,7 +89,6 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen bg-[#050510] text-white overflow-hidden font-sans select-none">
-
       <GameCanvas canvasRef={canvasRef} />
 
       {appState === 'MENU' && (
@@ -89,7 +96,14 @@ export default function App() {
       )}
 
       {appState === 'SETUP' && (
-        <SetupMenu isP2Bot={isP2Bot} setAppState={setAppState} onStartFile={(file) => prepareGame('file', file)} onStartMic={() => prepareGame('mic')} language={settings.language} />
+        <SetupMenu
+          isP2Bot={isP2Bot}
+          setAppState={setAppState}
+          onStartFile={(file) => prepareGame('file', file)}
+          onStartMic={() => prepareGame('mic')}
+          onStartUrl={(url) => prepareGame('url', url)}
+          language={settings.language}
+        />
       )}
 
       {appState === 'SETTINGS' && (

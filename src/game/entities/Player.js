@@ -34,8 +34,12 @@ export class Player {
     update(opponent) {
         if (this.lives <= 0) return;
         if (this.invulnerable > 0) this.invulnerable--;
-        if (this.dashCooldown > 0) this.dashCooldown--;
-        if (this.flightTimer > 0) this.flightTimer--;
+
+        if (this.dashCooldown > 0) {
+            this.dashCooldown -= this.engine.isSuddenDeath ? 5 : 1;
+        }
+
+        if (this.flightTimer > 0 && this.flightTimer < 9000) this.flightTimer--;
 
         if (this.respawning) {
             this.y += 2;
@@ -134,17 +138,27 @@ export class Player {
         let speedMult = 1.0;
         let jumpReaction = 0.1;
         let itemAgro = 30;
+        let bombEvadeDist = 80;
 
         if (this.botDifficulty === 'easy') {
-            trackingDistance = 60; speedMult = 0.6; jumpReaction = 0.4; itemAgro = 60;
+            trackingDistance = 60; speedMult = 0.6; jumpReaction = 0.4; itemAgro = 60; bombEvadeDist = 0;
         } else if (this.botDifficulty === 'hard') {
-            trackingDistance = 5; speedMult = 1.4; jumpReaction = 0.0; itemAgro = 10;
+            trackingDistance = 5; speedMult = 1.4; jumpReaction = 0.0; itemAgro = 10; bombEvadeDist = 120;
         }
 
-        let closestItem = this.engine.items.find(i => i.active && i.y > 0);
-        if (closestItem && this.percentage > itemAgro) {
-            targetX = closestItem.x;
-        } else if (opp.lives > 0 && !opp.respawning) {
+        let goodItems = this.engine.items.filter(i => i.active && i.y > 0 && i.type !== 'bomb');
+        let bombs = this.engine.items.filter(i => i.active && i.y > 0 && i.type === 'bomb');
+
+        let closestGoodItem = goodItems.length > 0 ? goodItems.reduce((prev, curr) => Math.abs(curr.x - this.x) < Math.abs(prev.x - this.x) ? curr : prev) : null;
+        let closestBomb = bombs.length > 0 ? bombs.reduce((prev, curr) => Math.abs(curr.x - this.x) < Math.abs(prev.x - this.x) ? curr : prev) : null;
+
+        if (closestBomb && Math.abs(closestBomb.x - this.x) < bombEvadeDist && closestBomb.y > this.y - 150) {
+            targetX = this.x + (this.x < closestBomb.x ? -150 : 150); // Corre en dirección opuesta
+        }
+        else if (closestGoodItem && this.percentage > itemAgro) {
+            targetX = closestGoodItem.x;
+        }
+        else if (opp.lives > 0 && !opp.respawning) {
             targetX = opp.x;
         }
 
@@ -242,9 +256,9 @@ export class Player {
         if (this.respawning) ctx.globalAlpha = 0.5;
 
         let visualColor = this.color;
-        if (this.percentage > 50) visualColor = '#ffaa00';
+        if (this.percentage >= 100) visualColor = '#ffaa00';
         if (this.percentage >= 200) visualColor = '#ff0000';
-        if (this.dashCooldown === 0) visualColor = '#ffffff';
+        if (this.isDashing) visualColor = '#ffffff';
 
         if (this.flightTimer > 0) {
             ctx.fillStyle = '#00ffff';

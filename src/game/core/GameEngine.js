@@ -20,10 +20,14 @@ export class GameEngine {
         this.isGameOver = false;
         this.isMatchActive = false;
         this.isSuddenDeath = false;
+
+        this.sdTransition = false;
+        this.sdTransitionFrames = 0;
+        this.sdTimeLeftFrames = 0;
+
         this.animationId = null;
         this.matchStartTime = 0;
         this.isErraticMode = false;
-
         this.shakeFrames = 0;
 
         this.platforms = [];
@@ -59,25 +63,33 @@ export class GameEngine {
             p2: { lives: this.player2.lives, percent: this.player2.percentage },
             erratic: this.isErraticMode,
             suddenDeath: this.isSuddenDeath,
-            time: this.isMatchActive ? ((Date.now() - this.matchStartTime) / 1000).toFixed(1) : "0.0"
+            sdTransition: this.sdTransition,
+            sdCountdown: Math.ceil(this.sdTransitionFrames / 60),
+            sdTimeLeft: Math.ceil(this.sdTimeLeftFrames / 60),
+            time: this.isMatchActive && !this.isSuddenDeath ? ((Date.now() - this.matchStartTime) / 1000).toFixed(1) : "0.0"
         });
     }
 
-    async initAudio(sourceType, isP2Bot, file = null) {
+    async initAudio(sourceType, isP2Bot, fileOrUrl = null) {
         this.player1 = new Player('p1', '#ff00ff', this.canvas.width * 0.25, { up: 'KeyW', left: 'KeyA', right: 'KeyD', dash: 'KeyF' }, false, this, this.settings.lives, 'normal');
-        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', dash: 'ShiftRight' }, isP2Bot, this, this.settings.lives, this.settings.botDifficulty);
+        this.player2 = new Player('p2', '#00ffff', this.canvas.width * 0.75, { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', dash: 'Shift' }, isP2Bot, this, this.settings.lives, this.settings.botDifficulty);
+
         this.platforms = Array.from({ length: NUM_PLATFORMS }, (_, i) => new Platform(i, this.canvas.width, this.canvas.height));
         this.items = [];
+        this.orbs = [];
         this.particles = [];
 
-        await this.audioEngine.prepare(sourceType, file, this.settings.volume, () => {
-            if (!this.isGameOver && this.isMatchActive) this.checkGameEnd(true);
+        await this.audioEngine.prepare(sourceType, fileOrUrl, this.settings.volume, () => {
+            if (!this.isGameOver && this.isMatchActive && !this.sdTransition && !this.isSuddenDeath) {
+                this.checkGameEnd(true);
+            }
         });
 
-        this.isSuddenDeath = false;
         this.input.start();
         this.isGameOver = false;
         this.isMatchActive = false;
+        this.isSuddenDeath = false;
+        this.sdTransition = false;
         this.triggerUpdate();
         this.loop();
     }
@@ -86,17 +98,28 @@ export class GameEngine {
         this.isMatchActive = true;
         this.matchStartTime = Date.now();
         this.audioEngine.startPlaying();
+    }
 
-        this.player1.x = this.canvas.width * 0.25;
-        this.player1.y = 50;
-        this.player2.x = this.canvas.width * 0.75;
-        this.player2.y = 50;
-        this.player1.vy = 0;
-        this.player2.vy = 0;
+    startSuddenDeathTransition() {
+        this.sdTransition = true;
+        this.sdTransitionFrames = 180;
+        this.shakeScreen(40);
+        this.triggerUpdate();
+        this.audioEngine.playRandomSuddenDeathTrack(this.settings.volume);
+    }
+
+    resolveSuddenDeathTie() {
+        if (this.player1.lives > this.player2.lives) this.checkGameEnd(false, 'p1');
+        else if (this.player2.lives > this.player1.lives) this.checkGameEnd(false, 'p2');
+        else {
+            if (this.player1.percentage < this.player2.percentage) this.checkGameEnd(false, 'p1');
+            else if (this.player2.percentage < this.player1.percentage) this.checkGameEnd(false, 'p2');
+            else this.checkGameEnd(true);
+        }
     }
 
     handlePlayerCollisions() {
-        if (!this.isMatchActive) return;
+        if (!this.isMatchActive || this.sdTransition) return;
         if (this.player1.lives <= 0 || this.player2.lives <= 0) return;
         if (this.player1.respawning || this.player2.respawning) return;
         if (this.player1.invulnerable > 0 || this.player2.invulnerable > 0) return;
@@ -106,18 +129,23 @@ export class GameEngine {
             this.player1.y < this.player2.y + this.player2.height &&
             this.player1.y + this.player1.height > this.player2.y) {
 
-            let dx = (this.player1.x + this.player1.width / 2) - (this.player2.x + this.player2.width / 2);
-            let baseDmg = Math.floor(Math.random() * 8) + 5;
+            if (this.isSuddenDeath && !this.player1.isDashing && !this.player2.isDashing) {
+                return;
+            }
 
-            let dmgP1ToP2 = baseDmg * (this.player1.isDashing ? 2.5 : 1);
-            let dmgP2ToP1 = baseDmg * (this.player2.isDashing ? 2.5 : 1);
+            let dx = (this.player1.x + this.player1.width / 2) - (this.player2.x + this.player2.width / 2);
+
+            let baseDmg = Math.floor(Math.random() * 15) + 15;
+
+            let dmgP1ToP2 = baseDmg * (this.player1.isDashing ? 3.5 : 1);
+            let dmgP2ToP1 = baseDmg * (this.player2.isDashing ? 3.5 : 1);
 
             this.player1.percentage += dmgP2ToP1;
             this.player2.percentage += dmgP1ToP2;
 
-            let baseForce = 8;
-            let forceP1 = baseForce * (1 + (this.player1.percentage / 40)) * (this.player2.isDashing ? 1.8 : 1);
-            let forceP2 = baseForce * (1 + (this.player2.percentage / 40)) * (this.player1.isDashing ? 1.8 : 1);
+            let baseForce = 9;
+            let forceP1 = baseForce * (1 + (this.player1.percentage / 35)) * (this.player2.isDashing ? 2.2 : 1);
+            let forceP2 = baseForce * (1 + (this.player2.percentage / 35)) * (this.player1.isDashing ? 2.2 : 1);
 
             let direction = dx > 0 ? 1 : -1;
             this.player1.vx = direction * forceP1;
@@ -130,9 +158,9 @@ export class GameEngine {
             this.player1.spawnParticles(30, 'white', true);
 
             if (this.player1.isDashing || this.player2.isDashing) {
-                this.shakeScreen(15);
+                this.shakeScreen(30);
             } else {
-                this.shakeScreen(5);
+                this.shakeScreen(10);
             }
 
             this.triggerUpdate();
@@ -147,14 +175,17 @@ export class GameEngine {
         }
     }
 
-    checkGameEnd(songEnded = false) {
+    checkGameEnd(songEnded = false, forcedWinner = null) {
         if (this.isGameOver) return;
         this.isGameOver = true;
         this.isMatchActive = false;
         this.audioEngine.cleanup();
 
         let result = { type: '', color: '' };
-        if (songEnded || (this.player1.lives <= 0 && this.player2.lives <= 0)) {
+
+        if (forcedWinner) {
+            result = { type: forcedWinner, color: forcedWinner === 'p1' ? "text-pink-400" : "text-cyan-400" };
+        } else if (songEnded || (this.player1.lives <= 0 && this.player2.lives <= 0)) {
             result = { type: 'tie', color: "text-white" };
         } else if (this.player1.lives <= 0) {
             result = { type: this.player2.isBot ? 'cpu' : 'p2', color: "text-cyan-400" };
@@ -173,24 +204,52 @@ export class GameEngine {
         this.ctx.save();
         if (this.shakeFrames > 0) {
             this.shakeFrames--;
-            const shakeX = (Math.random() - 0.5) * 15;
-            const shakeY = (Math.random() - 0.5) * 15;
+            const intensity = this.shakeFrames > 10 ? 30 : 10;
+            const shakeX = (Math.random() - 0.5) * intensity;
+            const shakeY = (Math.random() - 0.5) * intensity;
             this.ctx.translate(shakeX, shakeY);
         }
 
         if (this.settings.theme === 'matrix') {
-            this.ctx.fillStyle = this.isErraticMode ? 'rgba(0, 30, 0, 0.4)' : 'rgba(0, 8, 0, 0.3)';
+            this.ctx.fillStyle = this.isErraticMode ? 'rgba(0, 30, 0, 0.4)' : 'rgba(0, 8, 0, 1.0)';
         } else if (this.settings.theme === 'blood') {
-            this.ctx.fillStyle = this.isErraticMode ? 'rgba(40, 0, 0, 0.5)' : 'rgba(15, 0, 0, 0.3)';
+            this.ctx.fillStyle = this.isErraticMode ? 'rgba(40, 0, 0, 0.5)' : 'rgba(15, 0, 0, 1.0)';
         } else {
-            this.ctx.fillStyle = this.isErraticMode ? 'rgba(20, 0, 10, 0.4)' : 'rgba(5, 5, 16, 0.3)';
+            this.ctx.fillStyle = this.isErraticMode ? 'rgba(20, 0, 10, 0.4)' : 'rgba(5, 5, 16, 1.0)';
         }
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillRect(-50, -50, this.canvas.width + 100, this.canvas.height + 100);
+
+        if (this.sdTransition) {
+            this.sdTransitionFrames--;
+            if (this.sdTransitionFrames <= 0) {
+                this.sdTransition = false;
+                this.isSuddenDeath = true;
+                this.sdTimeLeftFrames = 60 * 60;
+                this.player1.flightTimer = 999999;
+                this.player2.flightTimer = 999999;
+                this.player1.vy = -10;
+                this.player2.vy = -10;
+            }
+            this.player1.draw(this.ctx);
+            this.player2.draw(this.ctx);
+            this.triggerUpdate();
+            this.ctx.restore();
+            return;
+        }
+
+        if (this.isSuddenDeath) {
+            this.sdTimeLeftFrames--;
+            if (this.sdTimeLeftFrames <= 0) {
+                this.resolveSuddenDeathTie();
+                this.ctx.restore();
+                return;
+            }
+        }
 
         const { dataArray, globalIntensity, isMicMode } = this.audioEngine.getFrequencyData();
 
         let progress = 0;
-        if (this.isMatchActive) {
+        if (this.isMatchActive && !this.isSuddenDeath) {
             if (this.audioEngine.isMicMode) {
                 progress = Math.min(1, ((Date.now() - this.matchStartTime) / 1000) / 180);
             } else {
@@ -198,21 +257,22 @@ export class GameEngine {
             }
         }
 
+        if (this.isMatchActive && progress >= 0.90 && !this.isSuddenDeath && !this.sdTransition) {
+            this.startSuddenDeathTransition();
+            this.ctx.restore();
+            return;
+        }
+
         const maxDeadSides = Math.floor((NUM_PLATFORMS / 2) * 0.8);
         const currentDeadSides = Math.floor(progress * maxDeadSides);
 
-        if (this.isMatchActive && progress >= 0.95 && !this.isSuddenDeath) {
-            this.isSuddenDeath = true;
-            this.triggerUpdate();
-        }
-
         if (dataArray && this.isMatchActive) {
             let prevErratic = this.isErraticMode;
-            this.isErraticMode = globalIntensity > 80;
+            this.isErraticMode = globalIntensity > 75;
             if (prevErratic !== this.isErraticMode && Math.random() < 0.1) this.triggerUpdate();
 
-            if ((this.isErraticMode || this.isSuddenDeath) && Math.random() < 0.03) {
-                if (this.orbs.filter(o => o.active).length < 4) {
+            if ((this.isErraticMode || this.isSuddenDeath) && Math.random() < 0.05) {
+                if (this.orbs.filter(o => o.active).length < 5) {
                     this.orbs.push(new DissonanceOrb(this.canvas.width, this.canvas.height));
                 }
             }
@@ -235,15 +295,17 @@ export class GameEngine {
             if (!this.isErraticMode) avg = avg * 0.5;
 
             let isDeadZone = this.isMatchActive && (i < currentDeadSides);
-            this.platforms[i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone);
-            this.platforms[NUM_PLATFORMS - 1 - i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone);
-            this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone);
-            this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone);
+
+            this.platforms[i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone, this.isSuddenDeath);
+            this.platforms[NUM_PLATFORMS - 1 - i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone, this.isSuddenDeath);
+            this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone, this.settings.theme);
+            this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone, this.settings.theme);
         }
 
         if (this.isMatchActive && Math.random() < 0.004) {
             this.items.push(new Item(this.canvas.width, this.canvas.height));
-        } this.items.forEach(item => {
+        }
+        this.items.forEach(item => {
             item.update([this.player1, this.player2], () => this.triggerUpdate());
             item.draw(this.ctx);
         });

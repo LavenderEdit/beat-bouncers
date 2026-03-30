@@ -10,10 +10,10 @@ export class Item {
         this.canvasHeight = canvasHeight;
 
         const rand = Math.random();
-        if (rand < 0.4) {
+        if (rand < 0.15) {
             this.type = 'heal';
             this.color = '#00ff00';
-        } else if (rand < 0.7) {
+        } else if (rand < 0.40) {
             this.type = 'fly';
             this.color = '#00ffff';
         } else {
@@ -82,7 +82,7 @@ export class Item {
             ctx.arc(this.x + 12.5, this.y + 12.5, 10 + pulse, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(this.x + 10, this.y - 5, 5, 10); // Mecha
+            ctx.fillRect(this.x + 10, this.y - 5, 5, 10);
         }
 
         ctx.shadowBlur = 0;

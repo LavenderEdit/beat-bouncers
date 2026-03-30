@@ -28,7 +28,6 @@ export class InputManager {
             const pad = gamepads[playerIdx];
 
             if (pad) {
-
                 if (keyCode === 'KeyA' || keyCode === 'ArrowLeft') {
                     return pad.axes[0] < -0.4 || pad.buttons[14]?.pressed;
                 }
@@ -38,12 +37,11 @@ export class InputManager {
                 if (keyCode === 'KeyW' || keyCode === 'ArrowUp') {
                     return pad.axes[1] < -0.4 || pad.buttons[12]?.pressed || pad.buttons[0]?.pressed;
                 }
-                if (keyCode === 'KeyF' || keyCode === 'ShiftRight') {
+                if (keyCode === 'KeyF' || keyCode === 'Shift') {
                     return pad.buttons[2]?.pressed || pad.buttons[5]?.pressed;
                 }
-                // Controles del Ready Room (Confirmar)
                 if (keyCode === 'KeyS' || keyCode === 'ArrowDown') {
-                    return pad.buttons[0]?.pressed || pad.buttons[9]?.pressed; // Start o A
+                    return pad.buttons[0]?.pressed || pad.buttons[9]?.pressed;
                 }
             }
         }
