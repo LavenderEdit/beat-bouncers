@@ -29,7 +29,7 @@ export default function SetupMenu({ isP2Bot, onStartFile, onStartMic, onStartUrl
                         <button onClick={() => onStartUrl('/audio/tracks/track3.mp3')} className="flex flex-col justify-center items-center gap-2 py-4 px-2 border-2 border-indigo-500 rounded-xl text-indigo-400 hover:bg-indigo-900/50 hover:scale-105 transition-all font-bold">
                             <Disc size={24} /> {t.track3Btn}
                         </button>
-                        <button onClick={() => onStartUrl('/audio/tracks/track4.mp3')} className="flex flex-col justify-center items-center gap-2 py-4 px-2 border-2 border-indigo-500 rounded-xl text-indigo-400 hover:bg-indigo-900/50 hover:scale-105 transition-all font-bold">
+                        <button onClick={() => onStartUrl('/audio/tracks/track4_1.mp3')} className="flex flex-col justify-center items-center gap-2 py-4 px-2 border-2 border-indigo-500 rounded-xl text-indigo-400 hover:bg-indigo-900/50 hover:scale-105 transition-all font-bold">
                             <Disc size={24} /> {t.track4Btn}
                         </button>
                     </div>
