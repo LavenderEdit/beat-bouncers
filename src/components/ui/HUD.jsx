@@ -36,7 +36,8 @@ export default function HUD({ gameState, isP2Bot, language }) {
     }
 
     return (
-        <div className={`absolute top-0 left-0 w-full flex justify-between items-start z-10 pointer-events-none ${isMobile ? 'p-2' : 'p-6'}`}>
+        <div className={`absolute top-0 left-0 w-full flex justify-between items-start z-10 pointer-events-none ${isMobile ? 'p-2 pt-12' : 'p-6'}`
+        }>
 
             <div className={`text-left bg-black/60 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col ${isMobile ? 'p-2 min-w-[100px] border-l-2' : 'p-4 min-w-[200px] border-l-4'} border-pink-500`}>
                 <h3 className={`font-black text-pink-500 ${isMobile ? 'text-lg' : 'text-2xl'}`} style={{ textShadow: '0 0 10px #ff00ff' }}>P1</h3>
@@ -46,9 +47,9 @@ export default function HUD({ gameState, isP2Bot, language }) {
                     <p className={`text-gray-400 font-bold tracking-[0.2em] uppercase mt-1 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>Max: 200%</p>
                 </div>
                 {!isMobile && <p className="text-pink-400 font-bold text-sm mt-3 uppercase">DASH: [F]</p>}
-            </div>
+            </div >
 
-            <div className={`text-center bg-black/60 backdrop-blur-sm rounded-2xl border border-white/10 shadow-lg flex flex-col items-center ${isMobile ? 'px-4 py-2' : 'px-8 py-3'}`}>
+            < div className={`text-center bg-black/60 backdrop-blur-sm rounded-2xl border border-white/10 shadow-lg flex flex-col items-center ${isMobile ? 'px-4 py-2' : 'px-8 py-3'}`}>
                 <div className={`flex items-center justify-center ${isMobile ? 'h-6 mb-1' : 'h-8 mb-2'}`}>
                     {gameState.suddenDeath ? (
                         <p className={`text-red-600 font-black animate-bounce drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] ${isMobile ? 'text-sm' : 'text-2xl'}`}>
@@ -64,9 +65,9 @@ export default function HUD({ gameState, isP2Bot, language }) {
                 <p className={`font-black font-mono ${gameState.suddenDeath ? 'text-red-400 animate-pulse' : 'text-white'} ${isMobile ? 'text-2xl' : 'text-4xl'}`}>
                     {gameState.suddenDeath ? gameState.sdTimeLeft : gameState.time}s
                 </p>
-            </div>
+            </div >
 
-            <div className={`text-right bg-black/60 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col items-end ${isMobile ? 'p-2 min-w-[100px] border-r-2' : 'p-4 min-w-[200px] border-r-4'} border-cyan-500`}>
+            < div className={`text-right bg-black/60 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col items-end ${isMobile ? 'p-2 min-w-[100px] border-r-2' : 'p-4 min-w-[200px] border-r-4'} border-cyan-500`}>
                 <h3 className={`font-black text-cyan-500 ${isMobile ? 'text-lg' : 'text-2xl'}`} style={{ textShadow: '0 0 10px #00ffff' }}>{isP2Bot ? 'CPU' : 'P2'}</h3>
                 <div className={`flex gap-1 text-cyan-500 justify-end ${isMobile ? 'my-1' : 'my-2'}`}>{renderLives(gameState.p2.lives)}</div>
                 <div className="flex flex-col items-end">
@@ -74,8 +75,8 @@ export default function HUD({ gameState, isP2Bot, language }) {
                     <p className={`text-gray-400 font-bold tracking-[0.2em] uppercase mt-1 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>Max: 200%</p>
                 </div>
                 {!isMobile && <p className="text-cyan-400 font-bold text-sm mt-3 uppercase">DASH: [SHIFT]</p>}
-            </div>
+            </div >
 
-        </div>
+        </div >
     );
 }

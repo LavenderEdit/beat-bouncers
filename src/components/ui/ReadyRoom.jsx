@@ -6,6 +6,11 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
     const [p1Ready, setP1Ready] = useState(false);
     const [p2Ready, setP2Ready] = useState(isP2Bot);
     const [countdown, setCountdown] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        setIsMobile(('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 768);
+    }, []);
 
     useEffect(() => {
         if (countdown !== null) return;
@@ -54,14 +59,14 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
             {countdown === null && (
                 <div className="w-full flex justify-between px-4 sm:px-20 mt-10 sm:mt-0">
                     <div className={`p-2 sm:p-4 rounded-xl backdrop-blur-sm border-2 sm:border-4 transition-all duration-300 ${p1Ready ? 'bg-pink-500/20 border-pink-500' : 'bg-black/50 border-gray-600'}`}>
-                        <h2 className={`text-sm sm:text-2xl font-black ${p1Ready ? 'text-pink-400' : 'text-gray-400'}`}>
-                            {p1Ready ? t.ready : t.waitingP1}
+                        <h2 className={`text-xs sm:text-2xl font-black ${p1Ready ? 'text-pink-400' : 'text-gray-400'}`}>
+                            {p1Ready ? t.ready : (isMobile ? "P1: DESLIZA ↑" : t.waitingP1)}
                         </h2>
                     </div>
 
                     <div className={`p-2 sm:p-4 rounded-xl backdrop-blur-sm border-2 sm:border-4 transition-all duration-300 ${p2Ready ? 'bg-cyan-500/20 border-cyan-500' : 'bg-black/50 border-gray-600'}`}>
-                        <h2 className={`text-sm sm:text-2xl font-black ${p2Ready ? 'text-cyan-400' : 'text-gray-400'}`}>
-                            {p2Ready ? t.ready : t.waitingP2}
+                        <h2 className={`text-xs sm:text-2xl font-black ${p2Ready ? 'text-cyan-400' : 'text-gray-400'}`}>
+                            {p2Ready ? t.ready : (isMobile ? "P2: ESPERANDO" : t.waitingP2)}
                         </h2>
                     </div>
                 </div>
@@ -76,8 +81,9 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
             )}
 
             {countdown === null && (
-                <div className="animate-pulse bg-black/60 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-sm text-gray-300 font-bold tracking-widest text-xs sm:text-base mb-24 sm:mb-0">
-                    SALTA PARA CONFIRMAR
+                // 🚀 SOLUCIÓN INVASIVIDAD: Quitamos el fondo y bordes, ahora es un texto limpio y sutil
+                <div className="animate-pulse text-white/70 font-bold tracking-widest text-xs sm:text-base mb-24 sm:mb-8 text-center drop-shadow-md">
+                    {isMobile ? "DESLIZA HACIA ARRIBA PARA EMPEZAR" : "PRESIONA SALTAR (W / ↑) PARA EMPEZAR"}
                 </div>
             )}
         </div>

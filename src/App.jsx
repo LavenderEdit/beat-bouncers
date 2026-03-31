@@ -91,59 +91,76 @@ export default function App() {
   }, []);
 
   return (
-    <div className="relative w-screen h-screen bg-[#050510] text-white overflow-hidden font-sans select-none">
+    <div className="relative w-screen h-[100dvh] bg-[#050510] text-white overflow-hidden font-sans select-none">
 
       <div className="fixed inset-0 z-[9999] bg-[#050510] flex-col items-center justify-center text-white hidden portrait:flex">
         <RotateCcw size={64} className="mb-6 animate-spin text-pink-500" />
         <h2 className="text-3xl font-black text-center mb-2 tracking-tighter">¡GIRA TU TELÉFONO!</h2>
         <p className="text-gray-400 text-center px-8 text-sm">Beat Bouncers requiere modo horizontal (Landscape) para jugarse correctamente.</p>
-      </div>
+      </ div>
 
       <GameCanvas canvasRef={canvasRef} />
 
-      {appState === 'MENU' && (
-        <MainMenu setAppState={setAppState} setIsP2Bot={setIsP2Bot} language={settings.language} />
-      )}
+      {
+        appState === 'MENU' && (
+          <MainMenu setAppState={setAppState} setIsP2Bot={setIsP2Bot} language={settings.language} />
+        )
+      }
 
-      {appState === 'SETUP' && (
-        <SetupMenu
-          isP2Bot={isP2Bot}
-          setAppState={setAppState}
-          onStartFile={(file) => prepareGame('file', file)}
-          onStartMic={() => prepareGame('mic')}
-          onStartUrl={(url) => prepareGame('url', url)}
-          language={settings.language}
-        />
-      )}
+      {
+        appState === 'SETUP' && (
+          <SetupMenu
+            isP2Bot={isP2Bot}
+            setAppState={setAppState}
+            onStartFile={(file) => prepareGame('file', file)}
+            onStartMic={() => prepareGame('mic')}
+            onStartUrl={(url) => prepareGame('url', url)}
+            language={settings.language}
+          />
+        )
+      }
 
-      {appState === 'SETTINGS' && (
-        <SettingsMenu settings={settings} setSettings={setSettings} setAppState={setAppState} />
-      )}
+      {
+        appState === 'SETTINGS' && (
+          <SettingsMenu settings={settings} setSettings={setSettings} setAppState={setAppState} />
+        )
+      }
 
-      {appState === 'LOADING' && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/80">
-          <div className="text-pink-400 font-bold text-2xl animate-pulse flex items-center gap-3">
-            <Volume2 className="animate-bounce" size={32} />
-            {t.loading}
+      {
+        appState === 'LOADING' && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/80">
+            <div className="text-pink-400 font-bold text-2xl animate-pulse flex items-center gap-3">
+              <Volume2 className="animate-bounce" size={32} />
+              {t.loading}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {appState === 'READY_ROOM' && (
-        <ReadyRoom engineRef={engineRef} isP2Bot={isP2Bot} language={settings.language} onStartMatch={startMatch} />
-      )}
+      {
+        appState === 'READY_ROOM' && (
+          <ReadyRoom engineRef={engineRef} isP2Bot={isP2Bot} language={settings.language} onStartMatch={startMatch} />
+        )
+      }
 
-      {appState === 'PLAYING' && (
-        <HUD gameState={gameState} isP2Bot={isP2Bot} language={settings.language} />
-      )}
+      {
+        appState === 'PLAYING' && (
+          <HUD gameState={gameState} isP2Bot={isP2Bot} language={settings.language} />
+        )
+      }
 
-      {appState === 'GAMEOVER' && (
-        <GameOver endResult={endResult} onRestart={returnToMenu} language={settings.language} />
-      )}
+      {
+        appState === 'GAMEOVER' && (
+          <GameOver endResult={endResult} onRestart={returnToMenu} language={settings.language} />
+        )
+      }
 
-      {isTouchDevice && (appState === 'PLAYING' || appState === 'READY_ROOM') && (
-        <TouchControls engineRef={engineRef} />
-      )}
-    </div>
+      {/* 📱 CONTROLES TÁCTILES: Solo si es un teléfono/tablet */}
+      {
+        isTouchDevice && (appState === 'PLAYING' || appState === 'READY_ROOM') && (
+          <TouchControls engineRef={engineRef} />
+        )
+      }
+    </div >
   );
 }
