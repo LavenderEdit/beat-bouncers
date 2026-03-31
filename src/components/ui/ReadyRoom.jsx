@@ -68,8 +68,8 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
             )}
 
             {countdown !== null && (
-                <div className="flex-1 flex items-center justify-center animate-in zoom-in duration-300 px-4">
-                    <h1 className="text-6xl sm:text-9xl font-black italic drop-shadow-[0_0_30px_rgba(255,255,255,0.8)] text-white text-center">
+                <div className="flex-1 flex items-center justify-center animate-in zoom-in duration-300 px-4 w-full">
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black italic drop-shadow-[0_0_30px_rgba(255,255,255,0.8)] text-white text-center leading-tight break-words max-w-full">
                         {countdown}
                     </h1>
                 </div>
