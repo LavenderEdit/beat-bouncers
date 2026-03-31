@@ -153,12 +153,10 @@ export class Player {
         let closestBomb = bombs.length > 0 ? bombs.reduce((prev, curr) => Math.abs(curr.x - this.x) < Math.abs(prev.x - this.x) ? curr : prev) : null;
 
         if (closestBomb && Math.abs(closestBomb.x - this.x) < bombEvadeDist && closestBomb.y > this.y - 150) {
-            targetX = this.x + (this.x < closestBomb.x ? -150 : 150); // Corre en dirección opuesta
-        }
-        else if (closestGoodItem && this.percentage > itemAgro) {
+            targetX = this.x + (this.x < closestBomb.x ? -150 : 150);
+        } else if (closestGoodItem && this.percentage > itemAgro) {
             targetX = closestGoodItem.x;
-        }
-        else if (opp.lives > 0 && !opp.respawning) {
+        } else if (opp.lives > 0 && !opp.respawning) {
             targetX = opp.x;
         }
 
@@ -245,7 +243,10 @@ export class Player {
 
     spawnParticles(amount = 10, colorStr = this.color, isExplosion = false) {
         if (!this.engine.settings.particles) return;
-        for (let i = 0; i < amount; i++) {
+        let finalAmount = this.engine.isMobile ? Math.floor(amount / 3) : amount;
+        if (finalAmount < 1) finalAmount = 1;
+
+        for (let i = 0; i < finalAmount; i++) {
             this.engine.particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, colorStr, isExplosion));
         }
     }
@@ -269,7 +270,7 @@ export class Player {
             ctx.globalAlpha = 1.0;
         }
 
-        ctx.shadowBlur = this.isDashing ? 30 : 20;
+        ctx.shadowBlur = this.engine.isMobile ? 0 : (this.isDashing ? 30 : 20);
         ctx.shadowColor = visualColor;
         ctx.fillStyle = visualColor;
 

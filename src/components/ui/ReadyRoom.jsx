@@ -10,18 +10,23 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
     useEffect(() => {
         if (countdown !== null) return;
 
-        const handleKeyDown = (e) => {
-            if (['w', 'W', 's', 'S'].includes(e.key)) {
-                setP1Ready(true);
+        let frameId;
+        const checkInput = () => {
+            if (engineRef.current && engineRef.current.input) {
+                const input = engineRef.current.input;
+                if (!p1Ready && (input.isPressed('KeyW') || input.isPressed('KeyS') || input.isPressed('w') || input.isPressed('W'))) {
+                    setP1Ready(true);
+                }
+                if (!p2Ready && (input.isPressed('ArrowUp') || input.isPressed('ArrowDown'))) {
+                    setP2Ready(true);
+                }
             }
-            if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
-                setP2Ready(true);
-            }
+            frameId = requestAnimationFrame(checkInput);
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [countdown]);
+        frameId = requestAnimationFrame(checkInput);
+        return () => cancelAnimationFrame(frameId);
+    }, [countdown, p1Ready, p2Ready, engineRef]);
 
     useEffect(() => {
         if (p1Ready && p2Ready && countdown === null) {
@@ -44,18 +49,18 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
     }, [countdown, onStartMatch, t.iconicPhrase]);
 
     return (
-        <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between items-center py-20">
+        <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between items-center py-10 sm:py-20">
 
             {countdown === null && (
-                <div className="w-full flex justify-between px-20">
-                    <div className={`p-4 rounded-xl backdrop-blur-sm border-4 transition-all duration-300 ${p1Ready ? 'bg-pink-500/20 border-pink-500' : 'bg-black/50 border-gray-600'}`}>
-                        <h2 className={`text-2xl font-black ${p1Ready ? 'text-pink-400' : 'text-gray-400'}`}>
+                <div className="w-full flex justify-between px-4 sm:px-20 mt-10 sm:mt-0">
+                    <div className={`p-2 sm:p-4 rounded-xl backdrop-blur-sm border-2 sm:border-4 transition-all duration-300 ${p1Ready ? 'bg-pink-500/20 border-pink-500' : 'bg-black/50 border-gray-600'}`}>
+                        <h2 className={`text-sm sm:text-2xl font-black ${p1Ready ? 'text-pink-400' : 'text-gray-400'}`}>
                             {p1Ready ? t.ready : t.waitingP1}
                         </h2>
                     </div>
 
-                    <div className={`p-4 rounded-xl backdrop-blur-sm border-4 transition-all duration-300 ${p2Ready ? 'bg-cyan-500/20 border-cyan-500' : 'bg-black/50 border-gray-600'}`}>
-                        <h2 className={`text-2xl font-black ${p2Ready ? 'text-cyan-400' : 'text-gray-400'}`}>
+                    <div className={`p-2 sm:p-4 rounded-xl backdrop-blur-sm border-2 sm:border-4 transition-all duration-300 ${p2Ready ? 'bg-cyan-500/20 border-cyan-500' : 'bg-black/50 border-gray-600'}`}>
+                        <h2 className={`text-sm sm:text-2xl font-black ${p2Ready ? 'text-cyan-400' : 'text-gray-400'}`}>
                             {p2Ready ? t.ready : t.waitingP2}
                         </h2>
                     </div>
@@ -63,15 +68,15 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
             )}
 
             {countdown !== null && (
-                <div className="flex-1 flex items-center justify-center animate-in zoom-in duration-300">
-                    <h1 className="text-9xl font-black italic drop-shadow-[0_0_30px_rgba(255,255,255,0.8)] text-white text-center">
+                <div className="flex-1 flex items-center justify-center animate-in zoom-in duration-300 px-4">
+                    <h1 className="text-6xl sm:text-9xl font-black italic drop-shadow-[0_0_30px_rgba(255,255,255,0.8)] text-white text-center">
                         {countdown}
                     </h1>
                 </div>
             )}
 
             {countdown === null && (
-                <div className="animate-pulse bg-black/60 px-8 py-3 rounded-full backdrop-blur-sm text-gray-300 font-bold tracking-widest">
+                <div className="animate-pulse bg-black/60 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-sm text-gray-300 font-bold tracking-widest text-xs sm:text-base mb-24 sm:mb-0">
                     SALTA PARA CONFIRMAR
                 </div>
             )}

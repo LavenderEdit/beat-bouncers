@@ -1,5 +1,3 @@
-import { Particle } from './Particle';
-
 export class DissonanceOrb {
     constructor(canvasWidth, canvasHeight) {
         this.x = Math.random() * canvasWidth;
@@ -47,9 +45,10 @@ export class DissonanceOrb {
         });
     }
 
-    draw(ctx) {
+    draw(ctx, isMobile = false) {
         if (!this.active) return;
-        ctx.shadowBlur = 20;
+
+        ctx.shadowBlur = isMobile ? 0 : 20;
         ctx.shadowColor = '#ff0055';
         ctx.fillStyle = '#ff0055';
 

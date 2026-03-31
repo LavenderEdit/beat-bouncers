@@ -29,8 +29,9 @@ export class GameEngine {
         this.matchStartTime = 0;
         this.isErraticMode = false;
         this.shakeFrames = 0;
-
         this.frameCount = 0;
+
+        this.isMobile = false;
 
         this.platforms = [];
         this.items = [];
@@ -48,8 +49,24 @@ export class GameEngine {
     }
 
     resizeCanvas() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        const MIN_LOGICAL_HEIGHT = 750;
+        let logicalWidth = screenWidth;
+        let logicalHeight = screenHeight;
+
+        if (screenHeight < MIN_LOGICAL_HEIGHT) {
+            const ratio = MIN_LOGICAL_HEIGHT / screenHeight;
+            logicalHeight = MIN_LOGICAL_HEIGHT;
+            logicalWidth = screenWidth * ratio;
+        }
+
+        this.canvas.width = logicalWidth;
+        this.canvas.height = logicalHeight;
+
+        this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || screenWidth <= 768;
+
         if (this.platforms.length > 0) {
             this.platforms.forEach((p, i) => {
                 p.width = (this.canvas.width / NUM_PLATFORMS) + 1;
@@ -302,8 +319,8 @@ export class GameEngine {
 
             this.platforms[i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone, this.isSuddenDeath);
             this.platforms[NUM_PLATFORMS - 1 - i].update(avg, this.canvas.height, this.isErraticMode, this.isMatchActive, isDeadZone, this.isSuddenDeath);
-            this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone, this.settings.theme);
-            this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, this.isDeadZone, this.settings.theme);
+            this.platforms[i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone, this.settings.theme, this.isMobile);
+            this.platforms[NUM_PLATFORMS - 1 - i].draw(this.ctx, this.canvas.height, this.isErraticMode, isDeadZone, this.settings.theme, this.isMobile);
         }
 
         if (this.isMatchActive && Math.random() < 0.004) {
@@ -311,12 +328,12 @@ export class GameEngine {
         }
         this.items.forEach(item => {
             item.update([this.player1, this.player2], () => this.triggerUpdate());
-            item.draw(this.ctx);
+            item.draw(this.ctx, this.isMobile);
         });
 
         for (let i = this.orbs.length - 1; i >= 0; i--) {
             this.orbs[i].update([this.player1, this.player2], () => this.triggerUpdate(), this);
-            this.orbs[i].draw(this.ctx);
+            this.orbs[i].draw(this.ctx, this.isMobile);
             if (!this.orbs[i].active && this.orbs[i].y > this.canvas.height) {
                 this.orbs.splice(i, 1);
             }
@@ -331,7 +348,7 @@ export class GameEngine {
 
         for (let i = this.particles.length - 1; i >= 0; i--) {
             this.particles[i].update();
-            this.particles[i].draw(this.ctx);
+            this.particles[i].draw(this.ctx, this.isMobile);
             if (this.particles[i].life <= 0) this.particles.splice(i, 1);
         }
 

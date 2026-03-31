@@ -44,7 +44,7 @@ export class Platform {
         this.y += (this.targetY - this.y) * (isErraticMode ? 0.4 : 0.2);
     }
 
-    draw(ctx, canvasHeight, isErraticMode, isDeadZone, theme = 'neon') {
+    draw(ctx, canvasHeight, isErraticMode, isDeadZone, theme = 'neon', isMobile = false) {
         if (this.y >= canvasHeight) return;
 
         let myColor = `hsl(${this.colorRatio * 360}, 100%, 60%)`;
@@ -53,18 +53,23 @@ export class Platform {
 
         let drawColor = isDeadZone ? '#ff0000' : myColor;
 
-        ctx.shadowBlur = isErraticMode ? 25 : 10;
-        ctx.shadowColor = drawColor;
+        if (isMobile) {
+            ctx.fillStyle = drawColor;
+            ctx.fillRect(this.x, this.y, this.width - 1, canvasHeight - this.y);
+        } else {
+            ctx.shadowBlur = isErraticMode ? 25 : 10;
+            ctx.shadowColor = drawColor;
 
-        let gradient = ctx.createLinearGradient(this.x, this.y, this.x, canvasHeight);
-        gradient.addColorStop(0, drawColor);
-        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            let gradient = ctx.createLinearGradient(this.x, this.y, this.x, canvasHeight);
+            gradient.addColorStop(0, drawColor);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
-        ctx.fillStyle = gradient;
-        ctx.fillRect(this.x, this.y, this.width - 1, canvasHeight - this.y);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(this.x, this.y, this.width - 1, canvasHeight - this.y);
+            ctx.shadowBlur = 0;
+        }
 
         ctx.fillStyle = this.isCollapsing ? 'red' : 'white';
         ctx.fillRect(this.x, this.y, this.width - 1, 4);
-        ctx.shadowBlur = 0;
     }
 }

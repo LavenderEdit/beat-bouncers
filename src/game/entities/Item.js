@@ -58,9 +58,10 @@ export class Item {
         }
     }
 
-    draw(ctx) {
+    draw(ctx, isMobile = false) {
         if (!this.active) return;
-        ctx.shadowBlur = 20;
+
+        ctx.shadowBlur = isMobile ? 0 : 20;
         ctx.shadowColor = this.color;
         ctx.fillStyle = this.color;
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Volume2 } from 'lucide-react';
+import { Volume2, RotateCcw } from 'lucide-react';
 import { GameEngine } from './game/core/GameEngine';
 import { loadSettings } from './utils/storage';
 import { translations } from './utils/i18n';
@@ -20,6 +20,7 @@ export default function App() {
   const [appState, setAppState] = useState('MENU');
   const [isP2Bot, setIsP2Bot] = useState(false);
   const [endResult, setEndResult] = useState({ type: '', color: '' });
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   const [settings, setSettings] = useState(loadSettings());
   const t = translations[settings.language] || translations.es;
@@ -83,6 +84,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    setIsTouchDevice(('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
     return () => {
       if (engineRef.current) engineRef.current.cleanup();
     };
@@ -90,6 +92,13 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen bg-[#050510] text-white overflow-hidden font-sans select-none">
+
+      <div className="fixed inset-0 z-[9999] bg-[#050510] flex-col items-center justify-center text-white hidden portrait:flex">
+        <RotateCcw size={64} className="mb-6 animate-spin text-pink-500" />
+        <h2 className="text-3xl font-black text-center mb-2 tracking-tighter">¡GIRA TU TELÉFONO!</h2>
+        <p className="text-gray-400 text-center px-8 text-sm">Beat Bouncers requiere modo horizontal (Landscape) para jugarse correctamente.</p>
+      </div>
+
       <GameCanvas canvasRef={canvasRef} />
 
       {appState === 'MENU' && (
@@ -132,7 +141,7 @@ export default function App() {
         <GameOver endResult={endResult} onRestart={returnToMenu} language={settings.language} />
       )}
 
-      {(appState === 'PLAYING' || appState === 'READY_ROOM') && (
+      {isTouchDevice && (appState === 'PLAYING' || appState === 'READY_ROOM') && (
         <TouchControls engineRef={engineRef} />
       )}
     </div>
