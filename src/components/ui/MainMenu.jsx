@@ -1,5 +1,4 @@
-import React from 'react';
-import { Gamepad2, Cpu, Settings, Volume2 } from 'lucide-react';
+import { Gamepad2, Cpu, Settings, Volume2, Globe, Play } from 'lucide-react';
 import { translations } from '../../utils/i18n';
 
 export default function MainMenu({ setAppState, setIsP2Bot, language }) {
@@ -20,7 +19,7 @@ export default function MainMenu({ setAppState, setIsP2Bot, language }) {
                     className="w-32 h-32 sm:w-40 sm:h-40 mx-auto rounded-3xl shadow-[0_0_30px_#ff00ff] object-cover mb-4 sm:mb-6 border-2 border-pink-500"
                 />
 
-                <h1 className="text-4xl sm:text-5xl font-black mb-2 tracking-tighter" style={{ textShadow: '0 0 10px #ff00ff, 0 0 40px #ff00ff' }}>
+                <h1 className="text-4xl sm:text-5xl font-black mb-2 tracking-tighter font-orbitron" style={{ textShadow: '0 0 10px #ff00ff, 0 0 40px #ff00ff' }}>
                     BEAT BOUNCERS
                 </h1>
                 <h2 className="text-base sm:text-lg font-bold mb-6 sm:mb-10 text-gray-300 flex items-center justify-center gap-2">
@@ -34,7 +33,17 @@ export default function MainMenu({ setAppState, setIsP2Bot, language }) {
                     <button onClick={() => handlePlay(false)} className="w-full flex justify-center items-center gap-3 py-3 sm:py-4 px-4 text-lg sm:text-xl font-black rounded-xl text-white bg-pink-600 hover:bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.4)] hover:shadow-[0_0_25px_rgba(236,72,153,0.8)] transition-all">
                         <Gamepad2 size={24} /> {t.local}
                     </button>
+                    
+                    <button onClick={() => setAppState('MULTIPLAYER_MENU')} className="w-full flex justify-center items-center gap-3 py-3 sm:py-4 px-4 text-lg sm:text-xl font-black rounded-xl text-white bg-purple-600 hover:bg-purple-500 shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:shadow-[0_0_25px_rgba(147,51,234,0.8)] transition-all">
+                        <Globe size={24} /> {t.onlinePlay}
+                    </button>
+                    
+                    <button onClick={() => setAppState('MEDIA_GENERATION_MENU')} className="w-full flex justify-center items-center gap-3 py-3 sm:py-4 px-4 text-lg sm:text-xl font-black rounded-xl text-white bg-amber-600 hover:bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] transition-all">
+                        <Play size={24} /> {t.generateYoutube}
+                    </button>
+
                     <div className="h-px w-full bg-gray-800 my-1 sm:my-2"></div>
+                    
                     <button onClick={() => setAppState('SETTINGS')} className="w-full flex justify-center items-center gap-3 py-2 sm:py-3 px-4 border border-gray-600 text-base sm:text-lg font-bold rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all">
                         <Settings size={20} /> {t.settings}
                     </button>

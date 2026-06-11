@@ -1,124 +1,193 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 export default function TouchControls({ engineRef }) {
-    const joystickRef = useRef({ active: false, startX: 0, startY: 0, currentKey: null });
+    const [opacity, setOpacity] = useState(0.4); // customizable opacity
+    const joystickAreaRef = useRef(null);
+    const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
 
-    const sendKey = (key, code, isPress) => {
-        if (!engineRef.current || !engineRef.current.input) return;
+    const activeTouchIdRef = useRef(null);
+    const startPosRef = useRef({ x: 0, y: 0 });
+    const maxRadius = 45; // max drag radius in pixels
 
-        if (isPress) engineRef.current.input.simulateKeyPress(code);
-        else engineRef.current.input.simulateKeyRelease(code);
-
-        const eventName = isPress ? 'keydown' : 'keyup';
-        const keyboardEvent = new KeyboardEvent(eventName, { key: key, code: code, bubbles: true });
-        window.dispatchEvent(keyboardEvent);
+    const getTouchSource = () => {
+        if (engineRef.current && engineRef.current.touch) {
+            return engineRef.current.touch;
+        }
+        return null;
     };
 
     const handleJoystickStart = (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        joystickRef.current = {
-            active: true,
-            startX: touch.clientX,
-            startY: touch.clientY,
-            currentKey: null
-        };
+        const touchSource = getTouchSource();
+        if (!touchSource) return;
+
+        const rect = joystickAreaRef.current.getBoundingClientRect();
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+
+        setIsDragging(true);
+        activeTouchIdRef.current = e.pointerId;
+        
+        // Pin center position where user initially pressed
+        startPosRef.current = { x: clientX, y: clientY };
+        setJoystickPos({ x: 0, y: 0 });
+
+        joystickAreaRef.current.setPointerCapture(e.pointerId);
     };
 
     const handleJoystickMove = (e) => {
-        e.preventDefault();
-        if (!joystickRef.current.active) return;
+        if (!isDragging || e.pointerId !== activeTouchIdRef.current) return;
+        const touchSource = getTouchSource();
+        if (!touchSource) return;
 
-        const touch = e.changedTouches[0];
-        const deltaX = touch.clientX - joystickRef.current.startX;
+        const clientX = e.clientX;
+        const clientY = e.clientY;
 
-        const threshold = 20;
+        let dx = clientX - startPosRef.current.x;
+        let dy = clientY - startPosRef.current.y;
 
-        let newKey = null;
-        if (deltaX < -threshold) newKey = 'KeyA';
-        else if (deltaX > threshold) newKey = 'KeyD';
-
-        if (newKey !== joystickRef.current.currentKey) {
-            if (joystickRef.current.currentKey) {
-                sendKey(joystickRef.current.currentKey === 'KeyA' ? 'a' : 'd', joystickRef.current.currentKey, false);
-            }
-            if (newKey) {
-                sendKey(newKey === 'KeyA' ? 'a' : 'd', newKey, true);
-            }
-            joystickRef.current.currentKey = newKey;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > maxRadius) {
+            dx = (dx / distance) * maxRadius;
+            dy = (dy / distance) * maxRadius;
         }
+
+        setJoystickPos({ x: dx, y: dy });
+
+        // Calculate normalized axis X value (-1 to 1)
+        const axisX = dx / maxRadius;
+        touchSource.setAxisX(axisX);
     };
 
     const handleJoystickEnd = (e) => {
-        e.preventDefault();
-        if (joystickRef.current.currentKey) {
-            sendKey(joystickRef.current.currentKey === 'KeyA' ? 'a' : 'd', joystickRef.current.currentKey, false);
+        if (!isDragging || e.pointerId !== activeTouchIdRef.current) return;
+        const touchSource = getTouchSource();
+        if (touchSource) {
+            touchSource.setAxisX(0);
         }
-        joystickRef.current = { active: false, startX: 0, startY: 0, currentKey: null };
-    };
 
+        setIsDragging(false);
+        activeTouchIdRef.current = null;
+        setJoystickPos({ x: 0, y: 0 });
 
-    const actionRef = useRef({ startY: 0 });
-
-    const handleActionStart = (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        actionRef.current.startY = touch.clientY;
-        sendKey('f', 'KeyF', true);
-    };
-
-    const handleActionMove = (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        const deltaY = touch.clientY - actionRef.current.startY;
-
-        if (deltaY < -30) {
-            sendKey('f', 'KeyF', false);
-            sendKey('w', 'KeyW', true);
+        if (joystickAreaRef.current) {
+            try {
+                joystickAreaRef.current.releasePointerCapture(e.pointerId);
+            } catch (err) {}
         }
     };
 
-    const handleActionEnd = (e) => {
+    // Right Action Buttons
+    const handleJumpStart = (e) => {
         e.preventDefault();
-        sendKey('f', 'KeyF', false);
-        sendKey('w', 'KeyW', false);
+        const touchSource = getTouchSource();
+        if (touchSource) touchSource.setJump(true);
+    };
+
+    const handleJumpEnd = (e) => {
+        e.preventDefault();
+        const touchSource = getTouchSource();
+        if (touchSource) touchSource.setJump(false);
+    };
+
+    const handleDashStart = (e) => {
+        e.preventDefault();
+        const touchSource = getTouchSource();
+        if (touchSource) touchSource.setDash(true);
+    };
+
+    const handleDashEnd = (e) => {
+        e.preventDefault();
+        const touchSource = getTouchSource();
+        if (touchSource) touchSource.setDash(false);
     };
 
     useEffect(() => {
-        const preventContext = (e) => e.preventDefault();
-        document.addEventListener('contextmenu', preventContext);
-        return () => document.removeEventListener('contextmenu', preventContext);
+        const preventDefault = (e) => {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+                e.preventDefault();
+            }
+        };
+        // Disable context menu on controls
+        document.addEventListener('contextmenu', preventDefault);
+        return () => {
+            document.removeEventListener('contextmenu', preventDefault);
+            const touchSource = getTouchSource();
+            if (touchSource) touchSource.reset();
+        };
     }, []);
 
     return (
-        <div className="absolute inset-0 z-40 flex pointer-events-none landscape:flex portrait:hidden">
-
-            <div
-                onTouchStart={handleJoystickStart}
-                onTouchMove={handleJoystickMove}
-                onTouchEnd={handleJoystickEnd}
-                onTouchCancel={handleJoystickEnd}
-                className="w-1/2 h-full pointer-events-auto border-r border-white/5 flex items-end justify-center pb-6 opacity-30 active:opacity-60 active:bg-white/5 transition-all"
-            >
-                <div className="text-white/50 text-xl font-black mb-8 flex flex-col items-center">
-                    <span>← DESLIZA →</span>
-                    <span className="text-xs tracking-widest mt-2">PARA MOVERSE</span>
-                </div>
+        <div 
+            className="absolute inset-x-0 bottom-0 top-auto h-48 z-40 flex justify-between pointer-events-none select-none px-6 pb-6 pt-2 select-none"
+            style={{ 
+                opacity: opacity, 
+                paddingLeft: 'calc(1.5rem + window.safeAreaInsetsLeft || 0px)',
+                paddingRight: 'calc(1.5rem + window.safeAreaInsetsRight || 0px)' 
+            }}
+        >
+            {/* Opacity Control slider */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-2 bg-black/60 py-1 px-3 rounded-full border border-white/10 scale-90">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Opacidad</span>
+                <input 
+                    type="range" 
+                    min="0.1" 
+                    max="0.9" 
+                    step="0.1" 
+                    value={opacity} 
+                    onChange={(e) => setOpacity(parseFloat(e.target.value))} 
+                    className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                />
             </div>
 
-            <div
-                onTouchStart={handleActionStart}
-                onTouchMove={handleActionMove}
-                onTouchEnd={handleActionEnd}
-                onTouchCancel={handleActionEnd}
-                className="w-1/2 h-full pointer-events-auto flex items-end justify-center pb-6 opacity-30 active:opacity-60 active:bg-pink-500/10 transition-all relative"
+            {/* Left Analog Joystick */}
+            <div 
+                ref={joystickAreaRef}
+                onPointerDown={handleJoystickStart}
+                onPointerMove={handleJoystickMove}
+                onPointerUp={handleJoystickEnd}
+                onPointerCancel={handleJoystickEnd}
+                className="w-40 h-40 rounded-full bg-white/5 border-2 border-white/10 relative flex items-center justify-center pointer-events-auto cursor-pointer"
+                style={{ touchAction: 'none' }}
             >
-                <div className="text-pink-400/50 text-xl font-black mb-8 flex flex-col items-center">
-                    <span>↑ DESLIZA SALTO</span>
-                    <span className="text-xs tracking-widest mt-2 border-t border-pink-500/50 pt-2">TOCA PARA DASH</span>
+                {/* Outer Ring Guideline */}
+                <div className="w-24 h-24 rounded-full border border-white/5 flex items-center justify-center">
+                    <span className="text-[9px] text-white/30 font-black tracking-widest">MOVE</span>
                 </div>
+
+                {/* Joystick Stick Knob */}
+                <div 
+                    className="w-16 h-16 rounded-full bg-gradient-to-tr from-cyan-600 to-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.6)] border border-cyan-300/40 absolute transition-transform duration-75 pointer-events-none"
+                    style={{ 
+                        transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)` 
+                    }}
+                />
             </div>
 
+            {/* Right Buttons Zone */}
+            <div className="flex gap-4 items-center justify-end pointer-events-none">
+                {/* DASH Button */}
+                <button
+                    onPointerDown={handleDashStart}
+                    onPointerUp={handleDashEnd}
+                    onPointerCancel={handleDashEnd}
+                    className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-300/20 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center pointer-events-auto active:scale-95 transition-transform"
+                    style={{ touchAction: 'none' }}
+                >
+                    DASH
+                </button>
+
+                {/* JUMP Button */}
+                <button
+                    onPointerDown={handleJumpStart}
+                    onPointerUp={handleJumpEnd}
+                    onPointerCancel={handleJumpEnd}
+                    className="w-24 h-24 rounded-full bg-gradient-to-tr from-pink-600 to-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.5)] border border-pink-300/20 text-white font-black text-lg uppercase tracking-wider flex items-center justify-center pointer-events-auto active:scale-95 transition-transform"
+                    style={{ touchAction: 'none' }}
+                >
+                    JUMP
+                </button>
+            </div>
         </div>
     );
 }

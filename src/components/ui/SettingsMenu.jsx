@@ -64,9 +64,21 @@ export default function SettingsMenu({ settings, setSettings, setAppState }) {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-1 sm:mt-2">
-                        <label className="text-gray-300 font-bold text-sm sm:text-base">{t.particles}</label>
-                        <input type="checkbox" checked={localSet.particles} onChange={(e) => setLocalSet({ ...localSet, particles: e.target.checked })} className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-gray-800 border-gray-600 accent-cyan-500 cursor-pointer" />
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <label className="text-gray-300 font-bold mb-1 block text-sm sm:text-base">{t.quality}</label>
+                            <select value={localSet.quality || 'high'} onChange={(e) => setLocalSet({ ...localSet, quality: e.target.value })} className="w-full bg-gray-800 text-white border border-gray-600 rounded-xl p-2 sm:p-3 outline-none text-sm sm:text-base">
+                                <option value="low">{t.qualityLow}</option>
+                                <option value="medium">{t.qualityMed}</option>
+                                <option value="high">{t.qualityHigh}</option>
+                            </select>
+                        </div>
+                        <div className="flex flex-col justify-end">
+                            <div className="flex items-center justify-between pb-2">
+                                <label className="text-gray-300 font-bold text-sm sm:text-base">{t.particles}</label>
+                                <input type="checkbox" checked={localSet.particles} onChange={(e) => setLocalSet({ ...localSet, particles: e.target.checked })} className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-gray-800 border-gray-600 accent-cyan-500 cursor-pointer" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
