@@ -17,12 +17,12 @@ export default function ReadyRoom({ engineRef, isP2Bot, language, onStartMatch }
 
         let frameId;
         const checkInput = () => {
-            if (engineRef.current && engineRef.current.input) {
-                const input = engineRef.current.input;
-                if (!p1Ready && (input.isPressed('KeyW') || input.isPressed('KeyS') || input.isPressed('w') || input.isPressed('W'))) {
+            if (engineRef.current && engineRef.current.keyboard) {
+                const keyboard = engineRef.current.keyboard;
+                if (!p1Ready && (keyboard.isPressed('KeyW') || keyboard.isPressed('KeyS') || keyboard.isPressed('w') || keyboard.isPressed('W'))) {
                     setP1Ready(true);
                 }
-                if (!p2Ready && (input.isPressed('ArrowUp') || input.isPressed('ArrowDown'))) {
+                if (!p2Ready && (keyboard.isPressed('ArrowUp') || keyboard.isPressed('ArrowDown'))) {
                     setP2Ready(true);
                 }
             }
