@@ -44,8 +44,11 @@ Bot con 3 niveles:
   - Aparecen **Orbes de Disonancia** rebotando por el mapa  
 
 ### 🎮 Experiencia de Juego
-- **Screen Shake** dinámico al impactar  
-- Soporte nativo para **Gamepads (PlayStation/Xbox)**  
+- **Screen Shake** dinámico al impactar.
+- **Controles Táctiles Integrados**: Joystick virtual analógico con soporte multitáctil para una experiencia fluida en dispositivos móviles.
+- **Tipografía Cyberpunk**: Integración de las tipografías premium *Orbitron* y *Outfit* desde Google Fonts para un acabado arcade futurista.
+- **Soporte Dinámico de 2 a 5 Jugadores**: El motor de juego y HUD se adaptan de forma fluida a partidas de hasta 5 jugadores simultáneos con identificación visual por colores.
+- Soporte nativo para **Gamepads (PlayStation/Xbox)**.
 
 ---
 
@@ -154,6 +157,37 @@ Configuraciones guardadas en `localStorage`:
 
 * Salir por un lado → apareces en el opuesto
 * Caer → reapareces desde arriba (estilo Pac-Man)
+
+---
+
+---
+
+## 🌐 Integración Online y Netcode
+
+En esta fase del proyecto, Beat Bouncers se ha expandido para admitir **partidas multijugador online** y **generación de niveles basados en YouTube**:
+- **Matchmaking en Tiempo Real**: Conexión a través de Socket.IO con query handshake para autenticación de nickname.
+- **Client-Side Prediction (Predicción en el Cliente)**: El jugador local procesa el movimiento instantáneamente en su propio motor local para evitar retardo (input lag).
+- **Server Reconciliation (Reconciliación del Servidor)**: Cuando el servidor envía un estado autorizado, el cliente reinicia el estado del jugador y vuelve a aplicar (replay) los inputs pendientes no procesados aún por el servidor.
+- **Entity Interpolation (Interpolación de Entidades)**: Suavizado de 100ms de retardo histórico para interpolar fluidamente las posiciones de los jugadores remotos sin cortes o saltos.
+
+---
+
+## 🐳 Despliegue en Docker
+
+El proyecto ahora soporta entornos de desarrollo y producción mediante contenedores:
+
+### Desarrollo Local (con recarga rápida HMR)
+```bash
+docker-compose up --build
+```
+Esto levantará el servidor de desarrollo Vite en `http://localhost:5173`.
+
+### Producción Estática (servido con Nginx)
+```bash
+docker build -t beat-bouncers-frontend .
+docker run -p 8080:80 beat-bouncers-frontend
+```
+Abrir en `http://localhost:8080` para probar la compilación de producción.
 
 ---
 
