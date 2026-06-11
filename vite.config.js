@@ -11,11 +11,11 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    allowedHosts: [
+      'beat-bouncers.studios-tkoh.online'
+    ],
     watch: {
       usePolling: true
-    },
-    hmr: {
-      clientPort: 9020
     }
   }
 })
