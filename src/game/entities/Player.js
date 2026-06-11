@@ -1,5 +1,5 @@
 import { GRAVITY, TERMINAL_VELOCITY } from '../../config/constants';
-import { Particle } from './Particle';
+
 
 export class Player {
     constructor(id, color, startX, controls, isBot, engine, maxLives, botDifficulty = 'normal') {
@@ -47,24 +47,27 @@ export class Player {
             return;
         }
 
-        const pIdx = this.id === 'p1' ? 0 : 1;
-
         if (this.isBot && this.engine.isMatchActive) {
             this.doBotLogic(opponent);
         } else {
-            if (this.engine.input.isPressed(this.controls.left, pIdx)) {
+            const input = this.lastPolledInput || { left: false, right: false, jump: false, dash: false, axisX: 0 };
+
+            if (input.left) {
                 this.vx -= 1.5;
                 this.facingRight = false;
-            } else if (this.engine.input.isPressed(this.controls.right, pIdx)) {
+            } else if (input.right) {
                 this.vx += 1.5;
                 this.facingRight = true;
+            } else if (input.axisX !== 0) {
+                this.vx += input.axisX * 1.5;
+                this.facingRight = input.axisX > 0;
             }
 
-            if (this.engine.input.isPressed(this.controls.dash, pIdx) && this.dashCooldown <= 0 && !this.isDashing) {
+            if (input.dash && this.dashCooldown <= 0 && !this.isDashing) {
                 this.startDash();
             }
 
-            if (this.engine.input.isPressed(this.controls.up, pIdx)) {
+            if (input.jump) {
                 if (this.flightTimer > 0) {
                     this.vy = -8;
                     this.spawnParticles(2, '#00ffff');
@@ -72,7 +75,6 @@ export class Player {
                     this.vy = this.jumpForce;
                     this.isGrounded = false;
                     this.jumps--;
-                    this.engine.input.keys[this.controls.up] = false;
                     this.spawnParticles(5, this.color);
                 }
             }
@@ -129,7 +131,6 @@ export class Player {
         this.isDashing = true;
         this.dashTimer = 12;
         this.dashCooldown = 120;
-        this.engine.input.keys[this.controls.dash] = false;
     }
 
     doBotLogic(opp) {
@@ -246,8 +247,10 @@ export class Player {
         let finalAmount = this.engine.isMobile ? Math.floor(amount / 3) : amount;
         if (finalAmount < 1) finalAmount = 1;
 
-        for (let i = 0; i < finalAmount; i++) {
-            this.engine.particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, colorStr, isExplosion));
+        if (this.engine.particlePool) {
+            for (let i = 0; i < finalAmount; i++) {
+                this.engine.particlePool.spawn(this.x + this.width / 2, this.y + this.height / 2, colorStr, isExplosion);
+            }
         }
     }
 

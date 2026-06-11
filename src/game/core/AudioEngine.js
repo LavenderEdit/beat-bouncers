@@ -45,6 +45,24 @@ export class AudioEngine {
             this.analyser.connect(this.gainNode);
             this.gainNode.connect(this.audioCtx.destination);
             this.source.onended = onSongEnded;
+        } else if (sourceType === 'generated' && fileOrUrl) {
+            this.isMicMode = false;
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://beat-bouncers-api.studios-tkoh.online';
+            const fullUrl = fileOrUrl.audioUrl.startsWith('http') 
+                ? fileOrUrl.audioUrl 
+                : `${backendUrl}${fileOrUrl.audioUrl}`;
+
+            const response = await fetch(fullUrl);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
+            this.duration = audioBuffer.duration;
+
+            this.source = this.audioCtx.createBufferSource();
+            this.source.buffer = audioBuffer;
+            this.source.connect(this.analyser);
+            this.analyser.connect(this.gainNode);
+            this.gainNode.connect(this.audioCtx.destination);
+            this.source.onended = onSongEnded;
         } else if (sourceType === 'mic') {
             this.isMicMode = true;
             this.duration = 180;
