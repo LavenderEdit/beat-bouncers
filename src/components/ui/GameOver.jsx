@@ -14,11 +14,11 @@ export default function GameOver({ endResult, onRestart, language }) {
     return (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/90 backdrop-blur-md animate-in fade-in duration-500 p-4 text-center">
 
-            <h2 className="text-gray-400 font-black tracking-[0.2em] sm:tracking-[0.5em] mb-2 sm:mb-4 text-sm sm:text-xl md:text-2xl uppercase">
+            <h2 className="text-gray-400 font-black tracking-[0.2em] sm:tracking-[0.5em] mb-2 sm:mb-4 text-sm sm:text-xl md:text-2xl uppercase font-orbitron">
                 {t.gameOver}
             </h2>
 
-            <h1 className={`text-4xl sm:text-5xl md:text-7xl font-black mb-8 sm:mb-10 tracking-tighter uppercase leading-tight ${endResult.color}`} style={{ textShadow: `0 0 30px currentColor` }}>
+            <h1 className={`text-4xl sm:text-5xl md:text-7xl font-black mb-8 sm:mb-10 tracking-tighter uppercase leading-tight ${endResult.color} font-orbitron`} style={{ textShadow: `0 0 30px currentColor` }}>
                 {resultText}
             </h1>
 
