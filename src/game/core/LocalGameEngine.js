@@ -60,10 +60,40 @@ export class LocalGameEngine {
         this.players = [];
 
         this.checkMobileStatus();
+        this.resizeListener = this.resizeCanvas.bind(this);
+        this.resizeCanvas();
+        window.addEventListener('resize', this.resizeListener);
     }
 
     checkMobileStatus() {
         this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 768;
+    }
+
+    resizeCanvas() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        const MIN_LOGICAL_HEIGHT = 750;
+        let logicalWidth = screenWidth;
+        let logicalHeight = screenHeight;
+
+        if (screenHeight < MIN_LOGICAL_HEIGHT) {
+            const ratio = MIN_LOGICAL_HEIGHT / screenHeight;
+            logicalHeight = MIN_LOGICAL_HEIGHT;
+            logicalWidth = screenWidth * ratio;
+        }
+
+        this.canvas.width = logicalWidth;
+        this.canvas.height = logicalHeight;
+
+        this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || screenWidth <= 768;
+
+        if (this.platforms && this.platforms.length > 0) {
+            this.platforms.forEach((p, i) => {
+                p.width = (this.canvas.width / NUM_PLATFORMS) + 1;
+                p.x = i * (this.canvas.width / NUM_PLATFORMS);
+            });
+        }
     }
 
     shakeScreen(frames) {
@@ -389,6 +419,7 @@ export class LocalGameEngine {
     }
 
     cleanup() {
+        window.removeEventListener('resize', this.resizeListener);
         this.keyboard.stop();
         this.audioEngine.cleanup();
     }
