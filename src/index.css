@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  /* Aquí se extendera a futuro si se necesita */
+  --font-sans: "Outfit", sans-serif;
+  --font-orbitron: "Orbitron", sans-serif;
 }
 
 html,
