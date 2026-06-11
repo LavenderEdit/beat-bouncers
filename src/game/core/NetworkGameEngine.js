@@ -56,11 +56,34 @@ export class NetworkGameEngine {
         this.latency = 0;
 
         this.checkMobileStatus();
+        this.resizeListener = this.resizeCanvas.bind(this);
+        this.resizeCanvas();
+        window.addEventListener('resize', this.resizeListener);
         this.setupNetworkListeners();
     }
 
     checkMobileStatus() {
         this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 768;
+    }
+
+    resizeCanvas() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        const MIN_LOGICAL_HEIGHT = 750;
+        let logicalWidth = screenWidth;
+        let logicalHeight = screenHeight;
+
+        if (screenHeight < MIN_LOGICAL_HEIGHT) {
+            const ratio = MIN_LOGICAL_HEIGHT / screenHeight;
+            logicalHeight = MIN_LOGICAL_HEIGHT;
+            logicalWidth = screenWidth * ratio;
+        }
+
+        this.canvas.width = logicalWidth;
+        this.canvas.height = logicalHeight;
+
+        this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || screenWidth <= 768;
     }
 
     shakeScreen(frames) {
@@ -258,6 +281,7 @@ export class NetworkGameEngine {
     }
 
     cleanup() {
+        window.removeEventListener('resize', this.resizeListener);
         this.keyboard.stop();
         socketClient.off('server:state');
         socketClient.off('server:matchEnd');
